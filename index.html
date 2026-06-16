@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NEOFİZİK - Canlı YKS Koçluk ve Veri Tabanı Sistemi</title>
+    <title>NEOFİZİK - Güvenli Canlı YKS Koçluk ve Analiz Paneli</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -34,6 +34,7 @@
         .student-badge { background: #ebf8ff; color: #2b6cb0; padding: 4px 10px; border-radius: 4px; font-size: 12px; font-weight: bold; }
         .status-badge { padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; color: white; }
         .status-success { background-color: var(--success-color); } .status-warning { background-color: var(--warning-color); color: #333; } .status-danger { background-color: var(--accent-color); }
+        .setup-box { background: #fff3cd; border: 1px solid #ffeeba; color: #856404; padding: 15px; border-radius: 6px; margin-bottom: 20px; text-align: center; }
     </style>
 </head>
 <body>
@@ -41,8 +42,12 @@
 <div class="container">
     <header>
         <h1>NEOFİZİK Bulut Tabanlı Canlı Koçluk Paneli</h1>
-        <p>Öğrenci ve Öğretmen Arasında Eş Zamanlı Canlı Uzaktan Takip Sistemi</p>
+        <p>GitHub Güvenlik Protokolü Aktif - Canlı Uzaktan Takip Sistemi</p>
     </header>
+
+    <div id="setupRequired" class="setup-box" style="display: none;">
+        ⚠️ Sistem bulut bağlantısı henüz kurulmadı. Lütfen sağ üstten giriş yaparken Firebase URL adresinizi tanımlayın.
+    </div>
 
     <div class="nav-tabs">
         <button class="tab-btn active" onclick="switchTab('student-login-tab')">🔑 Öğrenci Girişi</button>
@@ -50,10 +55,14 @@
     </div>
 
     <div id="student-login-tab" class="panel active">
-        <div id="studentLoginCard" class="card" style="max-width: 420px; margin: 0 auto; text-align: center;">
-            <h3>Öğrenci Giriş Paneli</h3>
-            <p style="font-size: 13px; color: #7f8c8d; margin-bottom: 15px;">Giriş kodunuz telefon numaranızın son 4 hanesidir.</p>
+        <div id="studentLoginCard" class="card" style="max-width: 420px; margin: 0 auto;">
+            <h3 style="text-align: center; margin-bottom:10px;">Öğrenci Giriş Paneli</h3>
             <div class="form-group">
+                <label>Bulut Veri Tabanı Linki (İlk girişte öğretmeninizden isteyin)</label>
+                <input type="text" id="studentDbUrl" placeholder="https://....firebaseio.com/">
+            </div>
+            <div class="form-group">
+                <label>Giriş Kodunuz (Telefon son 4 hane)</label>
                 <input type="password" id="studentCodeInput" placeholder="4 Haneli Kod" style="text-align: center; font-size: 16px; letter-spacing: 4px;">
             </div>
             <button class="btn" onclick="loginAsStudent()" style="width: 100%;">Canlı Sisteme Bağlan</button>
@@ -83,9 +92,16 @@
     </div>
 
     <div id="teacher-tab" class="panel">
-        <div id="teacherAuth" class="card" style="max-width: 400px; margin: 0 auto; text-align: center;">
-            <h3>Yönetici Girişi</h3>
-            <div class="form-group"><input type="password" id="teacherPass" placeholder="Şifre (1234)" style="text-align: center;"></div>
+        <div id="teacherAuth" class="card" style="max-width: 400px; margin: 0 auto;">
+            <h3 style="text-align: center; margin-bottom: 15px;">Yönetici Girişi</h3>
+            <div class="form-group">
+                <label>Firebase Veri Tabanı URL'niz</label>
+                <input type="text" id="teacherDbUrl" placeholder="https://....firebaseio.com/">
+            </div>
+            <div class="form-group">
+                <label>Yönetici Şifresi</label>
+                <input type="password" id="teacherPass" placeholder="Şifre (1234)" style="text-align: center;">
+            </div>
             <button class="btn" onclick="loginAsTeacher()" style="width: 100%;">Panelini Aç</button>
         </div>
 
@@ -130,33 +146,64 @@
 </div>
 
 <script>
-// !!! BURAYA 1. ADIMDAKİ KOPYALADIĞINIZ FIREBASE LİNKİNİ YAPIŞTIRIN !!!
-const firebaseConfig = { databaseURL: "https://neofizik-kocluk-default-rtdb.firebaseio.com/" };
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
-
+let db = null;
 let students = [];
 let currentChart = null;
 let loggedInStudentCode = null;
 
-// BULUTTAN VERİLERİ ANLIK ÇEKME (CANLI BAĞLANTI)
-db.ref("students").on("value", (snapshot) => {
-    const data = snapshot.val();
-    if(data) {
-        students = Object.values(data);
+const defaultStudents = {
+    "6493": { id: "6493", name: "AHMET EREN SAĞLAM", class: "12-D", task: "", taskStatus: "Verilmedi", exams: { "init": { date: "Nisan-Mayıs Ort.", type: "TYT", tur: 25, mat: 30, sos: 15, fen: 20.38, total: 90.38 } } },
+    "6082": { id: "6082", name: "AHMET SELİM ALTIPARMAK", class: "12-A", task: "", taskStatus: "Verilmedi", exams: { "init": { date: "Nisan-Mayıs Ort.", type: "TYT", tur: 30, mat: 35, sos: 15, fen: 20.50, total: 100.50 } } },
+    "2611": { id: "2611", name: "İREM YILMAZ", class: "12-D", task: "", taskStatus: "Verilmedi", exams: { "init": { date: "Nisan-Mayıs Ort.", type: "TYT", tur: 24, mat: 28, sos: 16, fen: 18.13, total: 86.13 } } },
+    "7305": { id: "7305", name: "OĞUZ MERT CEVİZ", class: "12-D", task: "", taskStatus: "Verilmedi", exams: { "init": { date: "Nisan-Mayıs Ort.", type: "TYT", tur: 20, mat: 22, sos: 12, fen: 14.63, total: 68.63 } } },
+    "2391": { id: "2391", name: "ECRİN COŞKUN", class: "12-B", task: "", taskStatus: "Verilmedi" },
+    "4618": { id: "4618", name: "SENA DOLU", class: "12-D", task: "", taskStatus: "Verilmedi", exams: { "init": { date: "Nisan-Mayıs Ort.", type: "TYT", tur: 22, mat: 25, sos: 14, fen: 17.50, total: 78.50 } } },
+    "0207": { id: "0207", name: "ESLEM ÜNVER", class: "12-C", task: "", taskStatus: "Verilmedi", exams: { "init": { date: "Nisan-Mayıs Ort.", type: "TYT", tur: 18, mat: 20, sos: 13, fen: 13.88, total: 64.88 } } },
+    "5616": { id: "5616", name: "ZEYNEP MANAV", class: "12-D", task: "", taskStatus: "Verilmedi", exams: { "init": { date: "Nisan-Mayıs Ort.", type: "TYT", tur: 25, mat: 26, sos: 14, fen: 18.38, total: 83.38 } } },
+    "3191": { id: "3191", name: "MİRAY KARATAŞ", class: "12-B", task: "", taskStatus: "Verilmedi", exams: { "init": { date: "Nisan-Mayıs Ort.", type: "TYT", tur: 15, mat: 16, sos: 10, fen: 10.88, total: 51.88 } } },
+    "7582": { id: "7582", name: "KEREM ALTINEL", class: "12-A", task: "", taskStatus: "Verilmedi", exams: { "init": { date: "Nisan-Mayıs Ort.", type: "TYT", tur: 22, mat: 24, sos: 13, fen: 15.88, total: 74.88 } } },
+    "5828": { id: "5828", name: "ONUR BEYGİRET", class: "12-C", task: "", taskStatus: "Verilmedi", exams: { "init": { date: "Nisan-Mayıs Ort.", type: "TYT", tur: 21, mat: 23, sos: 14, fen: 15.13, total: 73.13 } } }
+};
+
+// Sayfa Açıldığında Önbellekten URL Kontrolü Yap
+window.onload = function() {
+    const savedUrl = localStorage.getItem('neofizik_db_url');
+    if(savedUrl) {
+        document.getElementById('teacherDbUrl').value = savedUrl;
+        document.getElementById('studentDbUrl').value = savedUrl;
+        initFirebase(savedUrl);
     } else {
-        students = [];
+        document.getElementById('setupRequired').style.display = 'block';
     }
-    updateTeacherSelects();
-    renderStudentTable();
-    if(loggedInStudentCode) {
-        let s = students.find(x => x.id === loggedInStudentCode);
-        if(s) {
-            document.getElementById('studentTasks').innerHTML = s.task ? s.task.replace(/\n/g, '<br>') : 'Ödeviniz bulunmuyor.';
-            renderStudentChart(s);
+}
+
+function initFirebase(url) {
+    if (firebase.apps.length === 0) {
+        firebase.initializeApp({ databaseURL: url });
+    }
+    db = firebase.database();
+    document.getElementById('setupRequired').style.display = 'none';
+    
+    // Canlı Dinleyiciyi Başlat
+    db.ref("students").on("value", (snapshot) => {
+        const data = snapshot.val();
+        if(data) {
+            students = Object.values(data);
+        } else {
+            db.ref("students").set(defaultStudents);
+            students = Object.values(defaultStudents);
         }
-    }
-});
+        updateTeacherSelects();
+        renderStudentTable();
+        if(loggedInStudentCode) {
+            let s = students.find(x => x.id === loggedInStudentCode);
+            if(s) {
+                document.getElementById('studentTasks').innerHTML = s.task ? s.task.replace(/\n/g, '<br>') : 'Ödeviniz bulunmuyor.';
+                renderStudentChart(s);
+            }
+        }
+    });
+}
 
 function switchTab(tabId) {
     document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
@@ -164,10 +211,36 @@ function switchTab(tabId) {
 }
 
 function loginAsTeacher() {
-    if(document.getElementById('teacherPass').value === '1234') {
+    const url = document.getElementById('teacherDbUrl').value;
+    const pass = document.getElementById('teacherPass').value;
+    if(!url) return alert('Lütfen önce Firebase URL adresinizi girin.');
+    
+    if(pass === '1234') {
+        localStorage.setItem('neofizik_db_url', url);
+        initFirebase(url);
         document.getElementById('teacherAuth').style.display = 'none';
         document.getElementById('teacherDashboard').style.display = 'block';
-    }
+    } else { alert('Hatalı Şifre!'); }
+}
+
+function loginAsStudent() {
+    const url = document.getElementById('studentDbUrl').value;
+    const code = document.getElementById('studentCodeInput').value;
+    if(!url) return alert('Lütfen önce Veri Tabanı Linkini doldurun.');
+    
+    localStorage.setItem('neofizik_db_url', url);
+    initFirebase(url);
+
+    let s = students.find(x => x.id === code);
+    if(s) {
+        loggedInStudentCode = code;
+        document.getElementById('studentLoginCard').style.display = 'none';
+        document.getElementById('studentDashboard').style.display = 'block';
+        document.getElementById('welcomeText').innerText = `Hoş geldin, ${s.name}`;
+        document.getElementById('studentSubInfo').innerText = `Sınıf: ${s.class} | Canlı Koçluk Ekranı`;
+        document.getElementById('studentTasks').innerHTML = s.task ? s.task.replace(/\n/g, '<br>') : 'Ödeviniz bulunmuyor.';
+        renderStudentChart(s);
+    } else { alert('Kod bulunamadı!'); }
 }
 
 function updateTeacherSelects() {
@@ -185,7 +258,7 @@ function renderStudentTable() {
     const tbody = document.getElementById('studentTableBody');
     if(!tbody) return;
     tbody.innerHTML = '';
-    students.forEach((s, idx) => {
+    students.forEach((s) => {
         let exams = s.exams ? Object.values(s.exams) : [];
         let lastEx = exams.length > 0 ? exams[exams.length-1] : null;
         let examStr = lastEx ? `<b>${lastEx.total} Net</b> (${lastEx.date})` : '<i>Veri Yok</i>';
@@ -206,18 +279,19 @@ function addStudent() {
     const name = document.getElementById('newStudentName').value.toUpperCase();
     const cls = document.getElementById('newStudentClass').value.toUpperCase();
     const id = document.getElementById('newStudentCode').value;
-    if(!name || !cls || !id) return;
+    if(!name || !cls || !id || !db) return;
     db.ref("students/" + id).set({ id, name, class: cls, task: "", taskStatus: "Verilmedi" });
     document.getElementById('newStudentName').value = ''; document.getElementById('newStudentClass').value = ''; document.getElementById('newStudentCode').value = '';
 }
 
 function deleteStudent(id) {
-    if(confirm('Öğrenci silinecek?')) db.ref("students/" + id).remove();
+    if(confirm('Öğrenci silinecek?') && db) db.ref("students/" + id).remove();
 }
 
 function saveTask() {
     const id = document.getElementById('taskStudentSelect').value;
     const txt = document.getElementById('teacherTaskText').value;
+    if(!db) return;
     db.ref("students/" + id).update({ task: txt, taskStatus: txt ? "Devam Ediyor" : "Verilmedi" });
     document.getElementById('teacherTaskText').value = '';
     alert('Ödev buluta gönderildi!');
@@ -233,27 +307,13 @@ function saveExam() {
     const fen = parseFloat(document.getElementById('netFen').value) || 0;
     const total = tur + mat + sos + fen;
 
-    if(!date) return alert('Sınav adı şart.');
+    if(!date || !db) return alert('Sınav adı şart.');
     db.ref("students/" + id + "/exams").push({ date, type, tur, mat, sos, fen, total });
     alert('Netler buluta işlendi!');
 }
 
-function loginAsStudent() {
-    const code = document.getElementById('studentCodeInput').value;
-    let s = students.find(x => x.id === code);
-    if(s) {
-        loggedInStudentCode = code;
-        document.getElementById('studentLoginCard').style.display = 'none';
-        document.getElementById('studentDashboard').style.display = 'block';
-        document.getElementById('welcomeText').innerText = `Hoş geldin, ${s.name}`;
-        document.getElementById('studentSubInfo').innerText = `Sınıf: ${s.class} | Canlı Koçluk Ekranı`;
-        document.getElementById('studentTasks').innerHTML = s.task ? s.task.replace(/\n/g, '<br>') : 'Ödeviniz bulunmuyor.';
-        renderStudentChart(s);
-    } else { alert('Kod bulunamadı! Önce öğretmen panelinden bu kodla öğrenci eklemelisiniz.'); }
-}
-
 function updateMyTaskStatus(status) {
-    db.ref("students/" + loggedInStudentCode).update({ taskStatus: status });
+    if(db && loggedInStudentCode) db.ref("students/" + loggedInStudentCode).update({ taskStatus: status });
 }
 
 function renderStudentChart(student) {
