@@ -33,11 +33,9 @@
         .card { background: var(--light-bg); padding: 25px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 20px; }
         .student-badge { background: #ebf8ff; color: #2b6cb0; padding: 4px 10px; border-radius: 4px; font-size: 12px; font-weight: bold; }
         
-        /* İlerleme Çubuğu Tasarımı */
         .progress-container { background: #e2e8f0; border-radius: 10px; width: 100%; height: 18px; position: relative; overflow: hidden; margin-top: 5px; }
         .progress-bar { background: var(--success-color); height: 100%; width: 0%; transition: width 0.5s ease; }
         .progress-text { position: absolute; width: 100%; text-align: center; font-size: 11px; font-weight: bold; color: #1a202c; line-height: 18px; top: 0; }
-        .task-row { display: flex; align-items: center; justify-content: space-between; background: white; padding: 12px; border-radius: 6px; margin-bottom: 10px; border-left: 4px solid var(--primary-color); }
     </style>
 </head>
 <body>
@@ -159,9 +157,18 @@
 
 <script>
 // !!! BURADAKİ ADRESİ KENDİ FIREBASE LİNKİNİZLE DEĞİŞTİRİN !!!
-firebase.initializeApp({ databaseURL: "https://BURAYA-KENDI-FIREBASE-LINKINIZI-YAZIN.firebaseio.com/" });
-const db = firebase.database();
+const firebaseConfig = { databaseURL: "https://BURAYA-KENDI-FIREBASE-LINKINIZI-YAZIN.firebaseio.com/" };
 
+// Firebase Başlatma ve Hata Kontrolü
+try {
+    if (!firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
+    }
+} catch (e) {
+    console.error("Firebase başlatılamadı: ", e);
+}
+
+const db = firebase.database();
 let students = [];
 let currentChart = null;
 let loggedInStudentCode = null;
@@ -180,13 +187,23 @@ const defaultStudents = {
     "5828": { id: "5828", name: "ONUR BEYGİRET", class: "12-C", exams: { "init": { date: "Nisan-Mayıs Ort.", type: "TYT", total: 73.13 } } }
 };
 
+// Canlı Veri Akış Dinleyicisi
 db.ref("students").on("value", (snapshot) => {
     const data = snapshot.val();
-    if(data) { students = Object.values(data); } 
-    else { db.ref("students").set(defaultStudents); students = Object.values(defaultStudents); }
+    if(data) { 
+        students = Object.values(data); 
+    } else { 
+        db.ref("students").set(defaultStudents); 
+        students = Object.values(defaultStudents); 
+    }
     updateSelectMenus();
     renderStudentTable();
-    if(loggedInStudentCode) { showStudentDashboard(students.find(x => x.id === loggedInStudentCode)); }
+    if(loggedInStudentCode) { 
+        showStudentDashboard(students.find(x => x.id === loggedInStudentCode)); 
+    }
+}, (error) => {
+    console.error("Veri okuma hatası: ", error);
+    alert("Veri tabanına bağlanılamadı. İzinlerinizi (Rules) kontrol edin.");
 });
 
 function switchTab(tabId) { document.querySelectorAll('.panel').forEach(p => p.classList.remove('active')); document.getElementById(tabId).classList.add('active'); }
@@ -240,7 +257,7 @@ function showStudentDashboard(s) {
 function updateQuestionCount(studentId, taskKey) {
     let count = parseInt(document.getElementById('input_' + taskKey).value) || 0;
     db.ref("students/" + studentId + "/subjectTasks/" + taskKey).update({ done: count });
-    alert('Soru çözümü güncellendi ve buluta işlendi!');
+    alert('Soru çözümü güncellendi!');
 }
 
 function saveSubjectTask() {
@@ -250,7 +267,7 @@ function saveSubjectTask() {
     const topic = document.getElementById('taskTopicText').value || "Genel Tekrar";
 
     if(!id) return;
-    let taskKey = subject.toLowerCase().replace(/[^a-z]/g, ""); // benzersiz ders anahtarı
+    let taskKey = subject.toLowerCase().replace(/[^a-z]/g, "");
     db.ref("students/" + id + "/subjectTasks/" + taskKey).set({ subject, target, topic, done: 0 });
     
     document.getElementById('taskTopicText').value = '';
