@@ -41,7 +41,7 @@
 <div class="container">
     <header>
         <h1>NEOFİZİK Bulut Tabanlı Canlı Koçluk Paneli</h1>
-        <p>Eş Zamanlı Canlı Uzaktan Takip Sistemi - Güvenli Altyapı</p>
+        <p>Eş Zamanlı Canlı Uzaktan Takip Sistemi - Doğrudan Bağlantı Modu</p>
     </header>
 
     <div class="nav-tabs">
@@ -134,11 +134,8 @@
 </div>
 
 <script>
-// GitHub Güvenliği İçin Maskelenmiş Gerçek Firebase Altyapısı
-const _0x4a2b = ['aHR0cHM6Ly9uZW9maXppa2tvY2x1ay1kZWZhdWx0LXJ0ZGIuZmlyZWJhc2Vpby5jb20v'];
-const b64 = atob(_0x4a2b[0]);
-
-firebase.initializeApp({ databaseURL: b64 });
+// Doğrudan Bağlantılı Ortak Canlı Veri Tabanı Odası
+firebase.initializeApp({ databaseURL: "https://neofizikkocluk-default-rtdb.firebaseio.com/" });
 const db = firebase.database();
 
 let students = [];
