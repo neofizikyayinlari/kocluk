@@ -3,15 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NEOFİZİK - Canlı YKS Ders Bazlı Ödev ve Analiz Paneli</title>
+    <title>NEOFİZİK - Canlı YKS Detaylı Ders Analiz Paneli</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
     <style>
         :root { --primary-color: #2c3e50; --accent-color: #e74c3c; --success-color: #2ecc71; --warning-color: #f1c40f; --light-bg: #f8f9fa; --border-color: #dee2e6; }
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body { background-color: #edf2f7; color: #333; padding: 20px; }
-        .container { max-width: 1300px; margin: 0 auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+        .container { max-width: 1350px; margin: 0 auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
         header { text-align: center; margin-bottom: 30px; border-bottom: 4px solid var(--primary-color); padding-bottom: 15px; }
         header h1 { color: var(--primary-color); font-size: 32px; font-weight: 800; }
         header p { color: #7f8c8d; margin-top: 5px; font-size: 16px; }
@@ -38,6 +39,9 @@
         .progress-text { position: absolute; width: 100%; text-align: center; font-size: 11px; font-weight: bold; color: #1a202c; line-height: 18px; top: 0; }
         .motivation-box { background: #fffaf0; border-left: 5px solid #dd6b20; padding: 15px; border-radius: 6px; margin-bottom: 15px; color: #dd6b20; font-weight: 500; }
         .approval-item { background: #fff; padding: 15px; border-radius: 6px; border: 1px solid var(--border-color); margin-bottom: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
+        .pdf-box { border: 2px dashed #3182ce; background: #ebf8ff; padding: 15px; border-radius: 6px; text-align: center; margin-top: 15px; }
+        .nested-net-box { background: #fff; padding: 10px; border: 1px solid #cbd5e0; border-radius: 6px; margin-top: 5px; }
+        .nested-title { font-size: 11px; font-weight: bold; color: #718096; margin-bottom: 5px; text-transform: uppercase; }
     </style>
 </head>
 <body>
@@ -82,7 +86,7 @@
                     <div id="studentTasksListArea">Henüz aktif bir ders ödeviniz bulunmuyor.</div>
                 </div>
                 <div class="card">
-                    <h3>📈 Canlı Net Gelişim Grafiğim</h3>
+                    <h3>📈 Detaylı Net Gelişim Grafiğim</h3>
                     <canvas id="studentChart" width="400" height="230"></canvas>
                 </div>
             </div>
@@ -135,6 +139,20 @@
                         <button class="btn btn-success" onclick="saveSubjectTask()">💾 Ödevi İlet</button>
                     </div>
 
+                    <div class="card" style="border-left: 5px solid #9b59b6;">
+                        <h3>✍️ Öğrenciye Özel Mesaj Gönder</h3>
+                        <p style="font-size:12px; color:#7f8c8d; margin-bottom:10px;">İstediğiniz öğrenciyi seçerek doğrudan kendi özel motivasyon veya uyarı mesajınızı yazıp iletebilirsiniz.</p>
+                        <div class="form-group">
+                            <label>Öğrenci Seçin</label>
+                            <select id="customMsgStudentSelect"></select>
+                        </div>
+                        <div class="form-group">
+                            <label>Mesajınız</label>
+                            <textarea id="customMsgText" placeholder="Örn: Deneme sonuçlarını inceledim, Geometriye bu hafta biraz daha ağırlık verelim..." style="height: 80px; resize: none;"></textarea>
+                        </div>
+                        <button class="btn" onclick="sendCustomMessage()" style="width:100%; background:#9b59b6;">🚀 Mesajı Doğrudan İlet</button>
+                    </div>
+
                     <div class="card">
                         <h3>👤 Yeni Öğrenci Tanımla</h3>
                         <div class="grid-2">
@@ -154,13 +172,43 @@
                     </div>
 
                     <div class="card">
-                        <h3>📊 Deneme Girişi</h3>
-                        <select id="examStudentSelect" style="margin:10px 0;"></select>
-                        <div class="grid-2"><input type="text" id="examDate" placeholder="Sınav Adı"><select id="examType"><option value="TYT">TYT</option><option value="AYT">AYT</option></select></div>
-                        <div class="grid-4" style="margin-top:10px;">
-                            <input type="number" step="0.25" id="netTur" placeholder="Tr"><input type="number" step="0.25" id="netMat" placeholder="Mat"><input type="number" step="0.25" id="netSos" placeholder="Sos"><input type="number" step="0.25" id="netFen" placeholder="Fen">
+                        <h3>📊 Deneme Girişi Paneli</h3>
+                        <div class="grid-2">
+                            <input type="text" id="examDate" placeholder="Örn: Özdebir-3"><select id="examType"><option value="TYT">TYT</option><option value="AYT">AYT</option></select>
                         </div>
-                        <button class="btn btn-success" onclick="saveExam()" style="margin-top:15px; width:100%;">Sisteme İşle</button>
+                        
+                        <div style="margin-top: 10px; padding-top:10px; border-top:1px solid #ddd;">
+                            <label style="font-weight:bold; color:#7f8c8d; font-size:13px;">Seçenek A: Manuel Detaylı Giriş</label>
+                            <select id="examStudentSelect" style="margin:5px 0;"></select>
+                            
+                            <div class="grid-2">
+                                <input type="number" step="0.25" id="netTur" placeholder="Türkçe Net">
+                                <input type="number" step="0.25" id="netMat" placeholder="Matematik Net">
+                            </div>
+
+                            <div class="nested-net-box">
+                                <div class="nested-title">🏛️ Sosyal Bilimler Detayları</div>
+                                <div class="grid-4">
+                                    <input type="number" step="0.25" id="netTar" placeholder="Tar"><input type="number" step="0.25" id="netCogr" placeholder="Coğ"><input type="number" step="0.25" id="netFel" placeholder="Fel"><input type="number" step="0.25" id="netDin" placeholder="Din">
+                                </div>
+                            </div>
+
+                            <div class="nested-net-box">
+                                <div class="nested-title">🧪 Fen Bilimleri Detayları</div>
+                                <div class="grid-3">
+                                    <input type="number" step="0.25" id="netFiz" placeholder="Fizik"><input type="number" step="0.25" id="netKim" placeholder="Kimya"><input type="number" step="0.25" id="netBiyo" placeholder="Biyoloji">
+                                </div>
+                            </div>
+
+                            <button class="btn btn-success" onclick="saveExam()" style="margin-top:12px; width:100%; font-size:13px;">Sisteme Detaylı İşle</button>
+                        </div>
+
+                        <div class="pdf-box">
+                            <label style="font-size:12px; font-weight:bold; color:#2b6cb0; display:block; margin-bottom:5px;">Seçenek B: Akıllı Toplu PDF Yükleme</label>
+                            <input type="file" id="pdfFileInput" accept=".pdf" style="font-size:12px;">
+                            <button class="btn" onclick="processPDF()" style="margin-top:10px; width:100%; background:#3182ce; font-size:13px;">⚡ PDF Oku ve Ders Ders Ayıkla</button>
+                            <div id="pdfStatus" style="font-size:12px; color:#4a5568; margin-top:5px; font-weight:bold;"></div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -168,7 +216,7 @@
             <div class="card">
                 <h3>👥 Canlı Öğrenci Listesi ve Ödev İlerleme Durumları</h3>
                 <table>
-                    <thead><tr><th>Sınıf</th><th>Adı Soyadı</th><th>Kod</th><th>Aktif Ödev Durumları</th><th>Son Sınav</th><th>İşlem</th></tr></thead>
+                    <thead><tr><th>Sınıf</th><th>Adı Soyadı</th><th>Kod</th><th>Aktif Ödev Durumları</th><th>Son Sınav (Toplam Net)</th><th>İşlem</th></tr></thead>
                     <tbody id="studentTableBody"></tbody>
                 </table>
             </div>
@@ -177,7 +225,8 @@
 </div>
 
 <script>
-// Yeni ve Güncel Canlı Veritabanı Bağlantısı
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+
 const firebaseConfig = {
     apiKey: "AIzaSyDXTZTPUeYeSCNUjlfpUSUvVouC-ZOXei0",
     authDomain: "neofizik-kocluk.firebaseapp.com",
@@ -195,50 +244,27 @@ let currentChart = null;
 let loggedInStudentCode = null;
 
 const defaultStudents = {
-    "6493": { id: "6493", name: "AHMET EREN SAĞLAM", class: "12-D", exams: { "init": { date: "Nisan-Mayıs Ort.", type: "TYT", total: 90.38 } } },
-    "6082": { id: "6082", name: "AHMET SELİM ALTIPARMAK", class: "12-A", exams: { "init": { date: "Nisan-Mayıs Ort.", type: "TYT", total: 100.50 } } },
-    "2611": { id: "2611", name: "İREM YILMAZ", class: "12-D", exams: { "init": { date: "Nisan-Mayıs Ort.", type: "TYT", total: 86.13 } } },
-    "7305": { id: "7305", name: "OĞUZ MERT CEVİZ", class: "12-D", exams: { "init": { date: "Nisan-Mayıs Ort.", type: "TYT", total: 68.63 } } },
-    "2391": { id: "2391", name: "ECRİN COŞKUN", class: "12-B" },
-    "4618": { id: "4618", name: "SENA DOLU", class: "12-D", exams: { "init": { date: "Nisan-Mayıs Ort.", type: "TYT", total: 78.50 } } },
-    "0207": { id: "0207", name: "ESLEM ÜNVER", class: "12-C", exams: { "init": { date: "Nisan-Mayıs Ort.", type: "TYT", total: 64.88 } } },
-    "5616": { id: "5616", name: "ZEYNEP MANAV", class: "12-D", exams: { "init": { date: "Nisan-Mayıs Ort.", type: "TYT", total: 83.38 } } },
-    "3191": { id: "3191", name: "MİRAY KARATAŞ", class: "12-B", exams: { "init": { date: "Nisan-Mayıs Ort.", type: "TYT", total: 51.88 } } },
-    "7582": { id: "7582", name: "KEREM ALTINEL", class: "12-A", exams: { "init": { date: "Nisan-Mayıs Ort.", type: "TYT", total: 74.88 } } },
-    "5828": { id: "5828", name: "ONUR BEYGİRET", class: "12-C", exams: { "init": { date: "Nisan-Mayıs Ort.", type: "TYT", total: 73.13 } } }
+    "6493": { id: "6493", name: "AHMET EREN SAĞLAM", class: "12-D", exams: { "init": { date: "Başlangıç", type: "TYT", total: 90.00, tur: 25, mat: 30, sos: 15, fen: 20 } } },
+    "6082": { id: "6082", name: "AHMET SELİM ALTIPARMAK", class: "12-A", exams: { "init": { date: "Başlangıç", type: "TYT", total: 100.00, tur: 30, mat: 35, sos: 17, fen: 18 } } },
+    "2611": { id: "2611", name: "İREM YILMAZ", class: "12-D", exams: { "init": { date: "Başlangıç", type: "TYT", total: 85.00, tur: 28, mat: 25, sos: 14, fen: 18 } } }
 };
+
+document.getElementById('studentCodeInput').addEventListener('keyup', function(e) { if (e.key === 'Enter') { e.preventDefault(); loginAsStudent(); } });
+document.getElementById('teacherPass').addEventListener('keyup', function(e) { if (e.key === 'Enter') { e.preventDefault(); loginAsTeacher(); } });
 
 function suggestTargetQuestions() {
     const subject = document.getElementById('taskSubjectSelect').value;
     const currentNet = parseFloat(document.getElementById('taskCurrentNet').value) || 0;
     let baseQuestions = 100;
-
-    if (subject === "Matematik" || subject === "Türkçe") {
-        baseQuestions = currentNet > 30 ? 80 : 150; 
-    } else {
-        baseQuestions = currentNet > 10 ? 60 : 100; 
-    }
+    if (subject === "Matematik" || subject === "Türkçe") { baseQuestions = currentNet > 30 ? 80 : 150; } else { baseQuestions = currentNet > 10 ? 60 : 100; }
     document.getElementById('taskTargetQuestions').value = baseQuestions;
 }
 
-// Canlı Veritabanı Dinleyicisi
 db.ref("students").on("value", (snapshot) => {
     const data = snapshot.val();
-    if (data) {
-        students = Object.values(data);
-    } else {
-        db.ref("students").set(defaultStudents);
-        students = Object.values(defaultStudents);
-    }
-    
-    updateSelectMenus();
-    renderStudentTable();
-    renderTeacherApprovals();
-    
-    if(loggedInStudentCode) { 
-        let currentStudent = students.find(x => x.id === loggedInStudentCode);
-        if(currentStudent) showStudentDashboard(currentStudent); 
-    }
+    if (data) { students = Object.values(data); } else { db.ref("students").set(defaultStudents); students = Object.values(defaultStudents); }
+    updateSelectMenus(); renderStudentTable(); renderTeacherApprovals();
+    if(loggedInStudentCode) { let currentStudent = students.find(x => x.id === loggedInStudentCode); if(currentStudent) showStudentDashboard(currentStudent); }
 });
 
 function switchTab(tabId) { document.querySelectorAll('.panel').forEach(p => p.classList.remove('active')); document.getElementById(tabId).classList.add('active'); }
@@ -257,20 +283,44 @@ function loginAsStudent() {
     } else { alert('Hatalı Kod!'); }
 }
 
+async function processPDF() {
+    const fileInput = document.getElementById('pdfFileInput');
+    const examDate = document.getElementById('examDate').value;
+    const statusDiv = document.getElementById('pdfStatus');
+    if(!examDate) return alert('Lütfen önce Sınav Adını yazın.');
+    if(fileInput.files.length === 0) return alert('Lütfen bir PDF seçin.');
+    statusDiv.innerText = "PDF okunuyor ve ders ders analiz ediliyor...";
+    const file = fileInput.files[0]; const reader = new FileReader();
+    reader.onload = async function() {
+        try {
+            const typedarray = new Uint8Array(this.result); const pdf = await pdfjsLib.getDocument(typedarray).promise; let fullText = "";
+            for (let i = 1; i <= pdf.numPages; i++) { const page = await pdf.getPage(i); const textContent = await page.getTextContent(); fullText += " " + textContent.items.map(item => item.str).join(" ").toUpperCase(); }
+            let matchCount = 0;
+            students.forEach(student => {
+                const studentNameUpper = student.name.toUpperCase();
+                if(fullText.includes(studentNameUpper)) {
+                    const index = fullText.indexOf(studentNameUpper); const snippet = fullText.substring(index, index + 400); const numbers = snippet.match(/-?\d+[\.,]\d+|-?\d+/g); 
+                    if(numbers && numbers.length >= 9) {
+                        let tur = parseFloat(numbers[0].replace(",", ".")) || 0; let tar = parseFloat(numbers[1].replace(",", ".")) || 0; let cog = parseFloat(numbers[2].replace(",", ".")) || 0; let fel = parseFloat(numbers[3].replace(",", ".")) || 0; let din = parseFloat(numbers[4].replace(",", ".")) || 0; let mat = parseFloat(numbers[5].replace(",", ".")) || 0; let fiz = parseFloat(numbers[6].replace(",", ".")) || 0; let kim = parseFloat(numbers[7].replace(",", ".")) || 0; let biy = parseFloat(numbers[8].replace(",", ".")) || 0;
+                        let sosTotal = tar + cog + fel + din; let fenTotal = fiz + kim + biy; let totalNet = tur + mat + sosTotal + fenTotal;
+                        db.ref("students/" + student.id + "/exams").push({ date: examDate, tur, mat, sos: sosTotal, fen: fenTotal, tar, cog, fel, din, fiz, kim, biy, total: totalNet.toFixed(2) });
+                        matchCount++;
+                    }
+                }
+            });
+            statusDiv.innerHTML = `<span style="color:green;">✅ Başarılı! <b>${matchCount}</b> öğrencinin detaylı ders netleri yüklendi.</span>`; fileInput.value = "";
+        } catch (error) { statusDiv.innerHTML = `<span style="color:red;">❌ PDF ayrıştırılamadı.</span>`; }
+    };
+    reader.readAsArrayBuffer(file);
+}
+
 function showStudentDashboard(s) {
     document.getElementById('welcomeText').innerText = `Hoş geldin, ${s.name}`;
-    document.getElementById('studentSubInfo').innerText = `Sınıf: ${s.class} | Canlı Ödev Sistemi`;
-    
+    document.getElementById('studentSubInfo').innerText = `Sınıf: ${s.class} | Detaylı Ödev ve Net Analiz Sistemi`;
     const motArea = document.getElementById('studentMotivationArea');
-    if(s.approvedMotivation) {
-        motArea.innerHTML = `<div class="motivation-box">🚀 <b>Hocandan Mesaj Var:</b> ${s.approvedMotivation}</div>`;
-    } else {
-        motArea.innerHTML = '';
-    }
+    if(s.approvedMotivation) { motArea.innerHTML = `<div class="motivation-box">🚀 <b>Hocandan Mesaj Var:</b> ${s.approvedMotivation}</div>`; } else { motArea.innerHTML = ''; }
 
-    const listArea = document.getElementById('studentTasksListArea');
-    listArea.innerHTML = '';
-    
+    const listArea = document.getElementById('studentTasksListArea'); listArea.innerHTML = '';
     if(s.subjectTasks) {
         Object.keys(s.subjectTasks).forEach(key => {
             let t = s.subjectTasks[key];
@@ -298,54 +348,45 @@ function showStudentDashboard(s) {
 
 function updateQuestionCount(studentId, taskKey) {
     let count = parseInt(document.getElementById('input_' + taskKey).value) || 0;
-    
     db.ref("students/" + studentId).once("value", (snapshot) => {
-        let studentData = snapshot.val();
-        let t = studentData.subjectTasks[taskKey];
-        
+        let studentData = snapshot.val(); let t = studentData.subjectTasks[taskKey];
         db.ref("students/" + studentId + "/subjectTasks/" + taskKey).update({ done: count });
-
         if (count >= t.target && t.done < t.target) {
-            let draftMessage = `Harika bir iş çıkardın ${studentData.name}! ${t.subject} dersindeki ${t.currentNet || 3} netlik durumunu adım adım ${t.targetNet || 5} nete çekmek için koyduğumuz soru hedefini tamamladın. Bu disiplinle devam edersen başaramayacağın hiçbir şey yok, seninle gurur duyuyorum!`;
-            
-            db.ref("approvals/" + studentId + "_" + taskKey).set({
-                studentId: studentId,
-                studentName: studentData.name,
-                subject: t.subject,
-                currentNet: t.currentNet || 3,
-                targetNet: t.targetNet || 5,
-                draft: draftMessage
-            });
+            let draftMessage = `Harika bir iş çıkardın ${studentData.name}! ${t.subject} dersindeki ${t.currentNet || 3} netlik durumunu adım adım ${t.targetNet || 5} nete çekmek için koyduğumuz soru hedefini tamamladın. Seninle gurur duyuyorum!`;
+            db.ref("approvals/" + studentId + "_" + taskKey).set({ studentId, studentName: studentData.name, subject: t.subject, currentNet: t.currentNet || 3, targetNet: t.targetNet || 5, draft: draftMessage });
         }
     });
 }
 
 function saveSubjectTask() {
-    const id = document.getElementById('taskStudentSelect').value;
-    const subject = document.getElementById('taskSubjectSelect').value;
-    const target = parseInt(document.getElementById('taskTargetQuestions').value) || 100;
-    const topic = document.getElementById('taskTopicText').value || "Genel Tekrar";
-    const currentNet = parseFloat(document.getElementById('taskCurrentNet').value) || 3;
-    const targetNet = parseFloat(document.getElementById('taskTargetNet').value) || 5;
-
-    if(!id) return;
-    let taskKey = subject.toLowerCase().replace(/[^a-z]/g, "");
+    const id = document.getElementById('taskStudentSelect').value; const subject = document.getElementById('taskSubjectSelect').value;
+    const target = parseInt(document.getElementById('taskTargetQuestions').value) || 100; const topic = document.getElementById('taskTopicText').value || "Genel Tekrar";
+    const currentNet = parseFloat(document.getElementById('taskCurrentNet').value) || 3; const targetNet = parseFloat(document.getElementById('taskTargetNet').value) || 5;
+    if(!id) return; let taskKey = subject.toLowerCase().replace(/[^a-z]/g, "");
     db.ref("students/" + id + "/subjectTasks/" + taskKey).set({ subject, target, topic, done: 0, currentNet, targetNet });
-    document.getElementById('taskTopicText').value = '';
-    alert('Ödev başarıyla gönderildi.');
+    document.getElementById('taskTopicText').value = ''; alert('Ödev başarıyla gönderildi.');
+}
+
+// YENİ: Öğretmenin Doğrudan Özel Mesaj Gönderme Fonksiyonu
+function sendCustomMessage() {
+    const id = document.getElementById('customMsgStudentSelect').value;
+    const msg = document.getElementById('customMsgText').value;
+    
+    if(!id) return alert('Lütfen bir öğrenci seçin.');
+    if(!msg.trim()) return alert('Lütfen göndermek istediğiniz mesajı yazın.');
+    
+    db.ref("students/" + id).update({ approvedMotivation: msg }, (error) => {
+        if(error) { alert('Mesaj iletilirken bir hata oluştu.'); } else {
+            alert('Özel mesajınız öğrencinin paneline başarıyla anlık olarak iletildi!');
+            document.getElementById('customMsgText').value = '';
+        }
+    });
 }
 
 function renderTeacherApprovals() {
-    const approvalArea = document.getElementById('teacherApprovalArea');
-    if(!approvalArea) return;
-
+    const approvalArea = document.getElementById('teacherApprovalArea'); if(!approvalArea) return;
     db.ref("approvals").on("value", (snapshot) => {
-        const data = snapshot.val();
-        if(!data || Object.keys(data).length === 0) {
-            approvalArea.innerHTML = 'Herhangi bir onay bekleyen mesaj bulunmuyor.';
-            return;
-        }
-
+        const data = snapshot.val(); if(!data || Object.keys(data).length === 0) { approvalArea.innerHTML = 'Herhangi bir onay bekleyen mesaj bulunmuyor.'; return; }
         approvalArea.innerHTML = '';
         Object.keys(data).forEach(key => {
             let item = data[key];
@@ -364,42 +405,37 @@ function renderTeacherApprovals() {
 
 function approveMessage(studentId, approvalKey) {
     let finalMessage = document.getElementById('textarea_' + approvalKey).value;
-    db.ref("students/" + studentId).update({ approvedMotivation: finalMessage });
-    db.ref("approvals/" + approvalKey).remove();
-    alert("Motivasyon mesajı onaylandı ve öğrenciye başarıyla iletildi!");
+    db.ref("students/" + studentId).update({ approvedMotivation: finalMessage }); db.ref("approvals/" + approvalKey).remove();
+    alert("Motivasyon mesajı onaylandı ve iletildi!");
 }
 
-function rejectMessage(approvalKey) {
-    if(confirm('Bu mesaj taslağını silmek istediğinize emin misiniz?')) {
-        db.ref("approvals/" + approvalKey).remove();
-    }
-}
+function rejectMessage(approvalKey) { if(confirm('Mesaj silinsin mi?')) { db.ref("approvals/" + approvalKey).remove(); } }
 
 function updateSelectMenus() {
-    const loginSel = document.getElementById('loginStudentSelect');
-    const tSel = document.getElementById('taskStudentSelect');
+    const loginSel = document.getElementById('loginStudentSelect'); 
+    const tSel = document.getElementById('taskStudentSelect'); 
     const eSel = document.getElementById('examStudentSelect');
-    if(!loginSel) return;
+    const cSel = document.getElementById('customMsgStudentSelect'); // Yeni menü bağlantısı
     
-    let currentLoginVal = loginSel.value;
-    loginSel.innerHTML = '<option value="">-- İsminizi Seçin --</option>';
-    students.forEach(s => { loginSel.innerHTML += `<option value="${s.id}">${s.name} (${s.class})</option>`; });
-    loginSel.value = currentLoginVal;
-
-    if(tSel && eSel) {
-        tSel.innerHTML = ''; eSel.innerHTML = '';
-        students.forEach(s => { let op = `<option value="${s.id}">${s.name} (${s.class})</option>`; tSel.innerHTML += op; eSel.innerHTML += op; });
+    if(!loginSel) return; 
+    let currentLoginVal = loginSel.value; loginSel.innerHTML = '<option value="">-- İsminizi Seçin --</option>';
+    students.forEach(s => { loginSel.innerHTML += `<option value="${s.id}">${s.name} (${s.class})</option>`; }); loginSel.value = currentLoginVal;
+    
+    if(tSel && eSel && cSel) { 
+        let currentT = tSel.value; let currentE = eSel.value; let currentC = cSel.value;
+        tSel.innerHTML = ''; eSel.innerHTML = ''; cSel.innerHTML = ''; 
+        students.forEach(s => { 
+            let op = `<option value="${s.id}">${s.name} (${s.class})</option>`; 
+            tSel.innerHTML += op; eSel.innerHTML += op; cSel.innerHTML += op; 
+        }); 
+        tSel.value = currentT; eSel.value = currentE; cSel.value = currentC;
     }
 }
 
 function renderStudentTable() {
-    const tbody = document.getElementById('studentTableBody');
-    if(!tbody) return; tbody.innerHTML = '';
+    const tbody = document.getElementById('studentTableBody'); if(!tbody) return; tbody.innerHTML = '';
     students.forEach((s) => {
-        let exams = s.exams ? Object.values(s.exams) : [];
-        let lastEx = exams.length > 0 ? exams[exams.length-1] : null;
-        let examStr = lastEx ? `<b>${lastEx.total} Net</b>` : '<i>Veri Yok</i>';
-        
+        let exams = s.exams ? Object.values(s.exams) : []; let lastEx = exams.length > 0 ? exams[exams.length-1] : null; let examStr = lastEx ? `<b>${lastEx.total} Net</b>` : '<i>Veri Yok</i>';
         let taskSummary = "";
         if(s.subjectTasks) {
             Object.values(s.subjectTasks).forEach(t => {
@@ -407,53 +443,54 @@ function renderStudentTable() {
                 taskSummary += `<span class="student-badge" style="margin-right:4px; display:inline-block; margin-bottom:2px; background:${p===100?'#c6f6d5':'#feebc8'}; color:${p===100?'#22543d':'#744210'}">${t.subject}: %${p}</span>`;
             });
         } else { taskSummary = '<i>Ödev Yok</i>'; }
-
-        tbody.innerHTML += `<tr>
-            <td><span class="student-badge">${s.class}</span></td>
-            <td><b>${s.name}</b></td>
-            <td><code>${s.id}</code></td>
-            <td>${taskSummary}</td>
-            <td>${examStr}</td>
-            <td><button class="btn btn-danger" style="padding:4px 8px; font-size:12px;" onclick="deleteStudent('${s.id}')">Sil</button></td>
-        </tr>`;
+        tbody.innerHTML += `<tr><td><span class="student-badge">${s.class}</span></td><td><b>${s.name}</b></td><td><code>${s.id}</code></td><td>${taskSummary}</td><td>${examStr}</td><td><button class="btn btn-danger" style="padding:4px 8px; font-size:12px;" onclick="deleteStudent('${s.id}')">Sil</button></td></tr>`;
     });
 }
 
 function addStudent() {
-    const name = document.getElementById('newStudentName').value.toUpperCase();
-    const cls = document.getElementById('newStudentClass').value.toUpperCase();
-    const id = document.getElementById('newStudentCode').value;
+    const name = document.getElementById('newStudentName').value.toUpperCase(); const cls = document.getElementById('newStudentClass').value.toUpperCase(); const id = document.getElementById('newStudentCode').value;
     if(!name || !cls || !id) return alert('Lütfen tüm alanları doldurun.');
-    
     db.ref("students/" + id).set({ id: id, name: name, class: cls }, (error) => {
-        if(error) {
-            alert('Kayıt esnasında bir hata oluştu.');
-        } else {
-            alert(`${name} bulut veri tabanına kalıcı olarak eklendi!`);
-            document.getElementById('newStudentName').value = '';
-            document.getElementById('newStudentClass').value = '';
-            document.getElementById('newStudentCode').value = '';
+        if(error) { alert('Hata oluştu.'); } else {
+            alert(`${name} başarıyla eklendi!`);
+            document.getElementById('newStudentName').value = ''; document.getElementById('newStudentClass').value = ''; document.getElementById('newStudentCode').value = '';
         }
     });
 }
 
-function deleteStudent(id) { 
-    if(confirm('Öğrenci silinsin mi?')) db.ref("students/" + id).remove(); 
-}
+function deleteStudent(id) { if(confirm('Öğrenci silinsin mi?')) db.ref("students/" + id).remove(); }
 
 function saveExam() {
     const id = document.getElementById('examStudentSelect').value; const date = document.getElementById('examDate').value;
     const tur = parseFloat(document.getElementById('netTur').value) || 0; const mat = parseFloat(document.getElementById('netMat').value) || 0;
-    const sos = parseFloat(document.getElementById('netSos').value) || 0; const fen = parseFloat(document.getElementById('netFen').value) || 0;
+    const tar = parseFloat(document.getElementById('netTar').value) || 0; const cog = parseFloat(document.getElementById('netCogr').value) || 0;
+    const fel = parseFloat(document.getElementById('netFel').value) || 0; const din = parseFloat(document.getElementById('netDin').value) || 0;
+    const fiz = parseFloat(document.getElementById('netFiz').value) || 0; const kim = parseFloat(document.getElementById('netKim').value) || 0;
+    const biy = parseFloat(document.getElementById('netBiyo').value) || 0;
     if(!date) return alert('Sınav adı şart.');
-    db.ref("students/" + id + "/exams").push({ date, total: (tur+mat+sos+fen) });
-    document.getElementById('examDate').value = ''; alert('Sınav eklendi!');
+    let sosTotal = tar + cog + fel + din; let fenTotal = fiz + kim + biy; let totalNet = tur + mat + sosTotal + fenTotal;
+    db.ref("students/" + id + "/exams").push({ date, tur, mat, sos: sosTotal, fen: fenTotal, tar, cog, fel, din, fiz, kim, biy, total: totalNet.toFixed(2) });
+    document.getElementById('netTur').value = ''; document.getElementById('netMat').value = ''; document.getElementById('netTar').value = ''; document.getElementById('netCogr').value = ''; document.getElementById('netFel').value = ''; document.getElementById('netDin').value = ''; document.getElementById('netFiz').value = ''; document.getElementById('netKim').value = ''; document.getElementById('netBiyo').value = '';
+    alert('Detaylı sınav verisi başarıyla eklendi!');
 }
 
 function renderStudentChart(student) {
     const ctx = document.getElementById('studentChart').getContext('2d'); if (currentChart) currentChart.destroy();
-    let exams = student.exams ? Object.values(student.exams) : [];
-    currentChart = new Chart(ctx, { type: 'line', data: { labels: exams.map(e => e.date), datasets: [{ label: 'Toplam Net', data: exams.map(e => e.total), borderColor: '#2c3e50', borderWidth: 3, fill: false }] }, options: { responsive: true, scales: { y: { min: 0, max: 120 } } } });
+    let exams = student.exams ? Object.values(student.exams) : []; let labelDates = exams.map(e => e.date);
+    currentChart = new Chart(ctx, { 
+        type: 'line', 
+        data: { 
+            labels: labelDates, 
+            datasets: [
+                { label: 'Toplam Net', data: exams.map(e => e.total), borderColor: '#2c3e50', borderWidth: 3, fill: false },
+                { label: 'Matematik', data: exams.map(e => e.mat || 0), borderColor: '#e74c3c', borderWidth: 1.5, fill: false },
+                { label: 'Türkçe', data: exams.map(e => e.tur || 0), borderColor: '#2ecc71', borderWidth: 1.5, fill: false },
+                { label: 'Sosyal Bil.', data: exams.map(e => e.sos || 0), borderColor: '#f1c40f', borderWidth: 1.5, fill: false },
+                { label: 'Fen Bil.', data: exams.map(e => e.fen || 0), borderColor: '#9b59b6', borderWidth: 1.5, fill: false }
+            ] 
+        }, 
+        options: { responsive: true, scales: { y: { min: 0, max: 120 } } } 
+    });
 }
 </script>
 </body>
