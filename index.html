@@ -110,7 +110,6 @@
             <div class="card" id="studentExamDetailCard" style="display: none; border-top: 4px solid var(--primary-color);">
                 <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; margin-bottom: 15px;">
                     <h3 id="detailTableTitle" style="margin: 0;">📊 Sınav Sonuç Detaylarım</h3>
-                    
                     <div style="display: flex; align-items: center; gap: 10px;">
                         <span style="font-size: 13px; font-weight: bold; color: #4a5568;">📅 İncelenecek Deneme Sınavını Seçin:</span>
                         <select id="studentExamSelect" onchange="switchExamDetailView(this.value)" style="width: 200px; padding: 5px; font-size: 13px; border: 1px solid var(--primary-color);"></select>
@@ -253,6 +252,37 @@
                 </div>
             </div>
 
+            <div class="card" style="border-top: 4px solid #3182ce;">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; margin-bottom: 15px;">
+                    <h3>🔍 Öğrenci Sınav Arşivi & Detay Gözlem Odası</h3>
+                    <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+                        <div>
+                            <label style="font-size:12px; font-weight:bold; color:#4a5568; display:block;">1. Öğrenci Seçin:</label>
+                            <select id="teacherArchiveStudentSelect" onchange="loadStudentExamsToTeacherArchive(this.value)" style="width: 220px; padding: 5px; font-size: 13px;"></select>
+                        </div>
+                        <div>
+                            <label style="font-size:12px; font-weight:bold; color:#4a5568; display:block;">2. Sınav Seçin:</label>
+                            <select id="teacherArchiveExamSelect" onchange="switchTeacherArchiveExamView(this.value)" style="width: 200px; padding: 5px; font-size: 13px;"></select>
+                        </div>
+                    </div>
+                </div>
+                <div id="teacherArchiveTableArea" style="display:none;">
+                    <table class="detail-table">
+                        <thead>
+                            <tr>
+                                <th style="text-align: left;">Ders Adı</th>
+                                <th>Soru Sayısı</th>
+                                <th>Doğru</th>
+                                <th>Yanlış</th>
+                                <th>Net Durumu</th>
+                            </tr>
+                        </thead>
+                        <tbody id="teacherArchiveTableBody"></tbody>
+                    </table>
+                </div>
+                <div id="teacherArchiveStatus" style="font-size:13px; color:#7f8c8d; text-align:center; padding:10px;">Lütfen incelemek istediğiniz öğrenciyi seçin.</div>
+            </div>
+
             <div class="card">
                 <h3>👥 Canlı Öğrenci Listesi ve Ödev İlerleme Durumları</h3>
                 <table>
@@ -282,7 +312,8 @@ const db = firebase.database();
 let students = [];
 let currentChart = null;
 let loggedInStudentCode = null;
-let activeStudentExamsData = {}; // Aktif öğrencinin sınavlarını hafızada tutacak yardımcı nesne
+let activeStudentExamsData = {}; 
+let teacherArchiveSelectedStudentExams = {}; // Öğretmenin seçtiği öğrencinin denemelerini tutan nesne
 
 const defaultStudents = {
     "6493": { id: "6493", name: "AHMET EREN SAĞLAM", class: "12-D", exams: { "init": { date: "Başlangıç", type: "TYT", total: 90.00, tur: 25, mat: 30, sos: 15, fen: 20, tar: 4, cog: 4, fel: 3, din: 4, fiz: 6, kim: 7, biy: 7 } } },
@@ -336,6 +367,97 @@ function quickSwitchStudentSecure(targetStudentId) {
             document.getElementById('quickStudentSwitchSelect').value = loggedInStudentCode;
         }
     }
+}
+
+// YENİ: Öğretmen Seçtiği Öğrencinin Sınav Listesini Filtreye Yükler
+function loadStudentExamsToTeacherArchive(studentId) {
+    const examSelect = document.getElementById('teacherArchiveExamSelect');
+    const tableArea = document.getElementById('teacherArchiveTableArea');
+    const statusDiv = document.getElementById('teacherArchiveStatus');
+    
+    if(!studentId) {
+        tableArea.style.display = 'none';
+        statusDiv.style.display = 'block';
+        statusDiv.innerText = "Lütfen incelemek istediğiniz öğrenciyi seçin.";
+        return;
+    }
+    
+    let student = students.find(x => x.id === studentId);
+    if(!student || !student.exams) {
+        examSelect.innerHTML = '';
+        tableArea.style.display = 'none';
+        statusDiv.style.display = 'block';
+        statusDiv.innerText = "Bu öğrenciye ait herhangi bir sınav kaydı bulunamadı.";
+        return;
+    }
+    
+    teacherArchiveSelectedStudentExams = student.exams;
+    let keys = Object.keys(student.exams);
+    
+    examSelect.innerHTML = '';
+    keys.forEach(key => {
+        examSelect.innerHTML += `<option value="${key}">${student.exams[key].date}</option>`;
+    });
+    
+    statusDiv.style.display = 'none';
+    tableArea.style.display = 'block';
+    
+    // Otomatik son sınavı dök
+    let lastKey = keys[keys.length - 1];
+    examSelect.value = lastKey;
+    renderTeacherArchiveTableRowDetails(student.exams[lastKey]);
+}
+
+// YENİ: Öğretmen Sınav Değiştirdiğinde Tetiklenir
+function switchTeacherArchiveExamView(examKey) {
+    if(!examKey || !teacherArchiveSelectedStudentExams[examKey]) return;
+    renderTeacherArchiveTableRowDetails(teacherArchiveSelectedStudentExams[examKey]);
+}
+
+// YENİ: Öğretmen Paneli İçin Doğru/Yanlış Tablosunu Basar
+function renderTeacherArchiveTableRowDetails(exam) {
+    const tbody = document.getElementById('teacherArchiveTableBody');
+    tbody.innerHTML = '';
+    
+    const subjects = [
+        { name: "Türkçe", max: 40, net: exam.tur || 0 },
+        { name: "Matematik", max: 40, net: exam.mat || 0 },
+        { name: "Tarih", max: 5, net: exam.tar || 0 },
+        { name: "Coğrafya", max: 5, net: exam.cog || 0 },
+        { name: "Felsefe", max: 5, net: exam.fel || 0 },
+        { name: "Din Kültürü", max: 5, net: exam.din || 0 },
+        { name: "Fizik", max: 7, net: exam.fiz || 0 },
+        { name: "Kimya", max: 7, net: exam.kim || 0 },
+        { name: "Biyoloji", max: 7, net: exam.biy || 0 }
+    ];
+    
+    let grandTotalQuestions = 0; let grandTotalD = 0; let grandTotalY = 0; let grandTotalNet = 0;
+
+    subjects.forEach(sub => {
+        let netVal = parseFloat(sub.net); let Y = 0; let D = Math.ceil(netVal);
+        if (netVal % 1 !== 0) { let diff = D - netVal; Y = Math.round(diff / 0.25); D = Math.floor(netVal) + Y; }
+        if((D + Y) > sub.max) { D = Math.min(Math.round(netVal), sub.max); Y = 0; }
+        
+        grandTotalQuestions += sub.max; grandTotalD += D; grandTotalY += Y; grandTotalNet += netVal;
+
+        tbody.innerHTML += `
+            <tr>
+                <td style="text-align: left; font-weight:600;">${sub.name}</td>
+                <td>${sub.max}</td>
+                <td class="text-success-bold">${D}</td>
+                <td class="text-danger-bold">${Y}</td>
+                <td style="font-weight:bold; background:#f7fafc;">${netVal}</td>
+            </tr>`;
+    });
+
+    tbody.innerHTML += `
+        <tr style="background:#edf2f7; font-weight:bold; border-top: 2px solid var(--primary-color);">
+            <td style="text-align: left;">GENEL TOPLAM</td>
+            <td>${grandTotalQuestions}</td>
+            <td class="text-success-bold">${grandTotalD}</td>
+            <td class="text-danger-bold">${grandTotalY}</td>
+            <td style="color:#2b6cb0; font-size:16px;">${grandTotalNet.toFixed(2)} Net</td>
+        </tr>`;
 }
 
 async function processPDFv2() {
@@ -402,94 +524,36 @@ function showStudentDashboard(s) {
         });
     } else { listArea.innerHTML = 'Şu an aktif bir ödeviniz bulunmuyor.'; }
     
-    // Öğrencinin sınav geçmiş verisini global değişkene eşitleyelim
     activeStudentExamsData = s.exams ? s.exams : {};
-    
-    // Sınav seçim menüsünü (Filtreyi) doldurma
     buildStudentExamSelectMenu();
-    
     renderStudentChart(s);
 }
 
-// YENİ: Öğrenci Sayfasındaki Sınav Seçim Açılır Menüsünü Dolduran Fonksiyon
 function buildStudentExamSelectMenu() {
-    const selectMenu = document.getElementById('studentExamSelect');
-    const card = document.getElementById('studentExamDetailCard');
-    
-    let keys = Object.keys(activeStudentExamsData);
-    if(keys.length === 0) {
-        card.style.display = 'none';
-        return;
-    }
-    
-    card.style.display = 'block';
-    selectMenu.innerHTML = '';
-    
-    // Sınavları listeye ekle
-    keys.forEach(key => {
-        let exam = activeStudentExamsData[key];
-        selectMenu.innerHTML += `<option value="${key}">${exam.date}</option>`;
-    });
-    
-    // Varsayılan olarak en son girilen (listenin en sonundaki) sınavı otomatik seç ve render et
-    let lastKey = keys[keys.length - 1];
-    selectMenu.value = lastKey;
-    calculateAndRenderExamRowDetails(activeStudentExamsData[lastKey]);
+    const selectMenu = document.getElementById('studentExamSelect'); const card = document.getElementById('studentExamDetailCard');
+    let keys = Object.keys(activeStudentExamsData); if(keys.length === 0) { card.style.display = 'none'; return; }
+    card.style.display = 'block'; selectMenu.innerHTML = '';
+    keys.forEach(key => { let exam = activeStudentExamsData[key]; selectMenu.innerHTML += `<option value="${key}">${exam.date}</option>`; });
+    let lastKey = keys[keys.length - 1]; selectMenu.value = lastKey; calculateAndRenderExamRowDetails(activeStudentExamsData[lastKey]);
 }
 
-// YENİ: Öğrenci Sınav Değiştirdiğinde Tetiklenen Ara Fonksiyon
-function switchExamDetailView(selectedExamKey) {
-    if(!selectedExamKey || !activeStudentExamsData[selectedExamKey]) return;
-    calculateAndRenderExamRowDetails(activeStudentExamsData[selectedExamKey]);
-}
+function switchExamDetailView(selectedExamKey) { if(!selectedExamKey || !activeStudentExamsData[selectedExamKey]) return; calculateAndRenderExamRowDetails(activeStudentExamsData[selectedExamKey]); }
 
-// YENİ: Seçilen Sınav Nesnesine Göre Doğru Yanlış Tablosunu Basan Çekirdek Fonksiyon
 function calculateAndRenderExamRowDetails(exam) {
-    const tbody = document.getElementById('studentDetailTableBody');
-    const title = document.getElementById('detailTableTitle');
-    
-    title.innerText = `📊 Sınav Sonuç Detaylarım (${exam.date})`;
-    tbody.innerHTML = '';
-    
+    const tbody = document.getElementById('studentDetailTableBody'); const title = document.getElementById('detailTableTitle');
+    title.innerText = `📊 Sınav Sonuç Detaylarım (${exam.date})`; tbody.innerHTML = '';
     const subjects = [
-        { name: "Türkçe", max: 40, net: exam.tur || 0 },
-        { name: "Matematik", max: 40, net: exam.mat || 0 },
-        { name: "Tarih", max: 5, net: exam.tar || 0 },
-        { name: "Coğrafya", max: 5, net: exam.cog || 0 },
-        { name: "Felsefe", max: 5, net: exam.fel || 0 },
-        { name: "Din Kültürü", max: 5, net: exam.din || 0 },
-        { name: "Fizik", max: 7, net: exam.fiz || 0 },
-        { name: "Kimya", max: 7, net: exam.kim || 0 },
-        { name: "Biyoloji", max: 7, net: exam.biy || 0 }
+        { name: "Türkçe", max: 40, net: exam.tur || 0 }, { name: "Matematik", max: 40, net: exam.mat || 0 }, { name: "Tarih", max: 5, net: exam.tar || 0 }, { name: "Coğrafya", max: 5, net: exam.cog || 0 }, { name: "Felsefe", max: 5, net: exam.fel || 0 }, { name: "Din Kültürü", max: 5, net: exam.din || 0 }, { name: "Fizik", max: 7, net: exam.fiz || 0 }, { name: "Kimya", max: 7, net: exam.kim || 0 }, { name: "Biyoloji", max: 7, net: exam.biy || 0 }
     ];
-    
     let grandTotalQuestions = 0; let grandTotalD = 0; let grandTotalY = 0; let grandTotalNet = 0;
-
     subjects.forEach(sub => {
         let netVal = parseFloat(sub.net); let Y = 0; let D = Math.ceil(netVal);
         if (netVal % 1 !== 0) { let diff = D - netVal; Y = Math.round(diff / 0.25); D = Math.floor(netVal) + Y; }
         if((D + Y) > sub.max) { D = Math.min(Math.round(netVal), sub.max); Y = 0; }
-        
         grandTotalQuestions += sub.max; grandTotalD += D; grandTotalY += Y; grandTotalNet += netVal;
-
-        tbody.innerHTML += `
-            <tr>
-                <td style="text-align: left; font-weight:600;">${sub.name}</td>
-                <td>${sub.max}</td>
-                <td class="text-success-bold">${D}</td>
-                <td class="text-danger-bold">${Y}</td>
-                <td style="font-weight:bold; background:#f7fafc;">${netVal}</td>
-            </tr>`;
+        tbody.innerHTML += `<tr><td style="text-align: left; font-weight:600;">${sub.name}</td><td>${sub.max}</td><td class="text-success-bold">${D}</td><td class="text-danger-bold">${Y}</td><td style="font-weight:bold; background:#f7fafc;">${netVal}</td></tr>`;
     });
-
-    tbody.innerHTML += `
-        <tr style="background:#edf2f7; font-weight:bold; border-top: 2px solid var(--primary-color);">
-            <td style="text-align: left;">GENEL TOPLAM</td>
-            <td>${grandTotalQuestions}</td>
-            <td class="text-success-bold">${grandTotalD}</td>
-            <td class="text-danger-bold">${grandTotalY}</td>
-            <td style="color:#2b6cb0; font-size:16px;">${grandTotalNet.toFixed(2)} Net</td>
-        </tr>`;
+    tbody.innerHTML += `<tr style="background:#edf2f7; font-weight:bold; border-top: 2px solid var(--primary-color);"><td style="text-align: left;">GENEL TOPLAM</td><td>${grandTotalQuestions}</td><td class="text-success-bold">${grandTotalD}</td><td class="text-danger-bold">${grandTotalY}</td><td style="color:#2b6cb0; font-size:16px;">${grandTotalNet.toFixed(2)} Net</td></tr>`;
 }
 
 function updateQuestionCount(studentId, taskKey) {
@@ -547,14 +611,35 @@ function approveMessage(studentId, approvalKey) {
     alert("Motivasyon mesajı onaylandı ve iletildi!");
 }
 
-fn = function rejectMessage(approvalKey) { if(confirm('Mesaj silinsin mi?')) { db.ref("approvals/" + approvalKey).remove(); } }
+function rejectMessage(approvalKey) { if(confirm('Mesaj silinsin mi?')) { db.ref("approvals/" + approvalKey).remove(); } }
 
 function updateSelectMenus() {
-    const loginSel = document.getElementById('loginStudentSelect'); const tSel = document.getElementById('taskStudentSelect'); const eSel = document.getElementById('examStudentSelect'); const cSel = document.getElementById('customMsgStudentSelect'); const qSel = document.getElementById('quickStudentSwitchSelect');
-    if(!loginSel) return; let currentLoginVal = loginSel.value; loginSel.innerHTML = '<option value="">-- İsminizi Seçin --</option>';
+    const loginSel = document.getElementById('loginStudentSelect'); 
+    const tSel = document.getElementById('taskStudentSelect'); 
+    const eSel = document.getElementById('examStudentSelect'); 
+    const cSel = document.getElementById('customMsgStudentSelect'); 
+    const qSel = document.getElementById('quickStudentSwitchSelect');
+    const archSel = document.getElementById('teacherArchiveStudentSelect'); // Yeni Öğretmen Arşiv Menüsü
+    
+    if(!loginSel) return; 
+    let currentLoginVal = loginSel.value; loginSel.innerHTML = '<option value="">-- İsminizi Seçin --</option>';
     students.forEach(s => { loginSel.innerHTML += `<option value="${s.id}">${s.name} (${s.class})</option>`; }); loginSel.value = currentLoginVal;
+    
     if(qSel) { let currentQ = qSel.value; qSel.innerHTML = '<option value="">-- Öğrenci Seçin --</option>'; students.forEach(s => { qSel.innerHTML += `<option value="${s.id}">${s.name} (${s.class})</option>`; }); qSel.value = currentQ; }
-    if(tSel && eSel && cSel) { let currentT = tSel.value; let currentE = eSel.value; let currentC = cSel.value; tSel.innerHTML = ''; eSel.innerHTML = ''; cSel.innerHTML = ''; students.forEach(s => { let op = `<option value="${s.id}">${s.name} (${s.class})</option>`; tSel.innerHTML += op; eSel.innerHTML += op; cSel.innerHTML += op; }); tSel.value = currentT; eSel.value = currentE; cSel.value = currentC; }
+    
+    if(archSel) {
+        let currentArch = archSel.value;
+        archSel.innerHTML = '<option value="">-- Öğrenci Seçin --</option>';
+        students.forEach(s => { archSel.innerHTML += `<option value="${s.id}">${s.name} (${s.class})</option>`; });
+        archSel.value = currentArch;
+    }
+
+    if(tSel && eSel && cSel) { 
+        let currentT = tSel.value; let currentE = eSel.value; let currentC = cSel.value; 
+        tSel.innerHTML = ''; eSel.innerHTML = ''; cSel.innerHTML = ''; 
+        students.forEach(s => { let op = `<option value="${s.id}">${s.name} (${s.class})</option>`; tSel.innerHTML += op; eSel.innerHTML += op; cSel.innerHTML += op; }); 
+        tSel.value = currentT; eSel.value = currentE; cSel.value = currentC; 
+    }
 }
 
 function renderStudentTable() {
