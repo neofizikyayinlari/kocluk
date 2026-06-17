@@ -42,11 +42,15 @@
         .pdf-box { border: 2px dashed #3182ce; background: #ebf8ff; padding: 15px; border-radius: 6px; text-align: center; margin-top: 15px; }
         .nested-net-box { background: #fff; padding: 10px; border: 1px solid #cbd5e0; border-radius: 6px; margin-top: 5px; }
         .nested-title { font-size: 11px; font-weight: bold; color: #718096; margin-bottom: 5px; text-transform: uppercase; }
-        /* Yeni Eklenen Detay Listesi Stili */
         .detail-table th { background-color: var(--primary-color); color: white; font-size: 13px; text-align: center; }
         .detail-table td { text-align: center; font-size: 14px; }
         .text-success-bold { color: var(--success-color); font-weight: bold; }
         .text-danger-bold { color: var(--accent-color); font-weight: bold; }
+        
+        /* Hızlı Geçiş Alanı Tasarımı */
+        .switch-student-container { display: flex; justify-content: space-between; align-items: center; background: var(--primary-color); color: white; padding: 15px 25px; border-radius: 8px; margin-bottom: 20px; gap: 15px; }
+        .switch-box { display: flex; align-items: center; gap: 10px; background: rgba(255, 255, 255, 0.1); padding: 5px 15px; border-radius: 6px; border: 1px solid rgba(255, 255, 255, 0.2); }
+        .switch-box select { width: 220px; padding: 6px; font-size: 13px; font-weight: bold; color: var(--primary-color); border-radius: 4px; border: none; }
     </style>
 </head>
 <body>
@@ -76,10 +80,18 @@
             <button class="btn" onclick="loginAsStudent()" style="width: 100%;">Canlı Sisteme Bağlan</button>
         </div>
 
-        <div id="studentDashboard" style="display: none; margin-top: 30px;">
-            <div class="card" style="background: var(--primary-color); color: white;">
-                <h2 id="welcomeText"></h2>
-                <p id="studentSubInfo" style="opacity: 0.9; margin-top: 5px;"></p>
+        <div id="studentDashboard" style="display: none; margin-top: 10px;">
+            <div class="switch-student-container">
+                <div>
+                    <h2 id="welcomeText" style="font-size: 22px; font-weight: 700;"></h2>
+                    <p id="studentSubInfo" style="opacity: 0.85; margin-top: 2px; font-size: 13px;"></p>
+                </div>
+                <div class="switch-box">
+                    <span style="font-size: 13px; font-weight: 600; white-space: nowrap;">🔄 Hızlı Öğrenci Değiştir:</span>
+                    <select id="quickStudentSwitchSelect" onchange="quickSwitchStudent(this.value)">
+                        <option value="">Yükleniyor...</option>
+                    </select>
+                </div>
             </div>
             
             <div id="studentMotivationArea"></div>
@@ -112,7 +124,6 @@
                     <tbody id="studentDetailTableBody"></tbody>
                 </table>
             </div>
-
         </div>
     </div>
 
@@ -305,6 +316,16 @@ function loginAsStudent() {
     } else { alert('Hatalı Kod!'); }
 }
 
+// YENİ: Öğrenci Panelindeyken Tek Tıkla Başka Öğrenciye Geçiş Yapma Fonksiyonu
+function quickSwitchStudent(targetStudentId) {
+    if(!targetStudentId) return;
+    let s = students.find(x => x.id === targetStudentId);
+    if(s) {
+        loggedInStudentCode = s.id;
+        showStudentDashboard(s);
+    }
+}
+
 async function processPDF() {
     const fileInput = document.getElementById('pdfFileInput'); const examDate = document.getElementById('examDate').value; const statusDiv = document.getElementById('pdfStatus');
     if(!examDate) return alert('Lütfen önce Sınav Adını yazın.'); if(fileInput.files.length === 0) return alert('Lütfen bir PDF seçin.');
@@ -335,6 +356,11 @@ async function processPDF() {
 function showStudentDashboard(s) {
     document.getElementById('welcomeText').innerText = `Hoş geldin, ${s.name}`;
     document.getElementById('studentSubInfo').innerText = `Sınıf: ${s.class} | Detaylı Ödev ve Net Analiz Sistemi`;
+    
+    // Hızlı geçiş kutusunun seçili değerini mevcut öğrenci olarak senkronize et
+    const quickSwitch = document.getElementById('quickStudentSwitchSelect');
+    if(quickSwitch) { quickSwitch.value = s.id; }
+
     const motArea = document.getElementById('studentMotivationArea');
     if(s.approvedMotivation) { motArea.innerHTML = `<div class="motivation-box">🚀 <b>Hocandan Mesaj Var:</b> ${s.approvedMotivation}</div>`; } else { motArea.innerHTML = ''; }
 
@@ -363,88 +389,25 @@ function showStudentDashboard(s) {
     } else { listArea.innerHTML = 'Şu an aktif bir ödeviniz bulunmuyor.'; }
     
     renderStudentChart(s);
-    renderStudentDetailTable(s); // Yeni eklenen tablo fonksiyonu çağrısı
+    renderStudentDetailTable(s);
 }
 
-// YENİ: Öğrencinin Doğru Yanlış Sayılarını Hesaplayan ve Tabloyu Dolduran Fonksiyon
 function renderStudentDetailTable(student) {
-    const card = document.getElementById('studentExamDetailCard');
-    const tbody = document.getElementById('studentDetailTableBody');
-    const title = document.getElementById('detailTableTitle');
-    
-    let exams = student.exams ? Object.values(student.exams) : [];
-    if(exams.length === 0) {
-        card.style.display = 'none';
-        return;
-    }
-    
-    // Son sınavı baz alıyoruz
-    let lastExam = exams[exams.length - 1];
-    title.innerText = `📊 Son Sınav Sonuç Detaylarım (${lastExam.date})`;
-    card.style.display = 'block';
-    tbody.innerHTML = '';
-    
-    // TYT Soru Dağılım Şablonu
+    const card = document.getElementById('studentExamDetailCard'); const tbody = document.getElementById('studentDetailTableBody'); const title = document.getElementById('detailTableTitle');
+    let exams = student.exams ? Object.values(student.exams) : []; if(exams.length === 0) { card.style.display = 'none'; return; }
+    let lastExam = exams[exams.length - 1]; title.innerText = `📊 Son Sınav Sonuç Detaylarım (${lastExam.date})`; card.style.display = 'block'; tbody.innerHTML = '';
     const subjects = [
-        { name: "Türkçe", max: 40, net: lastExam.tur || 0 },
-        { name: "Matematik", max: 40, net: lastExam.mat || 0 },
-        { name: "Tarih", max: 5, net: lastExam.tar || 0 },
-        { name: "Coğrafya", max: 5, net: lastExam.cog || 0 },
-        { name: "Felsefe", max: 5, net: lastExam.fel || 0 },
-        { name: "Din Kültürü", max: 5, net: lastExam.din || 0 },
-        { name: "Fizik", max: 7, net: lastExam.fiz || 0 },
-        { name: "Kimya", max: 7, net: lastExam.kim || 0 },
-        { name: "Biyoloji", max: 7, net: lastExam.biy || 0 }
+        { name: "Türkçe", max: 40, net: lastExam.tur || 0 }, { name: "Matematik", max: 40, net: lastExam.mat || 0 }, { name: "Tarih", max: 5, net: lastExam.tar || 0 }, { name: "Coğrafya", max: 5, net: lastExam.cog || 0 }, { name: "Felsefe", max: 5, net: lastExam.fel || 0 }, { name: "Din Kültürü", max: 5, net: lastExam.din || 0 }, { name: "Fizik", max: 7, net: lastExam.fiz || 0 }, { name: "Kimya", max: 7, net: lastExam.kim || 0 }, { name: "Biyoloji", max: 7, net: lastExam.biy || 0 }
     ];
-    
-    let grandTotalQuestions = 0;
-    let grandTotalD = 0;
-    let grandTotalY = 0;
-    let grandTotalNet = 0;
-
+    let grandTotalQuestions = 0; let grandTotalD = 0; let grandTotalY = 0; let grandTotalNet = 0;
     subjects.forEach(sub => {
-        // Akıllı D/Y Algoritması (Net formülü tersine işletilir: Net = D - Y/4)
-        let netVal = parseFloat(sub.net);
-        let Y = 0;
-        let D = Math.ceil(netVal);
-        
-        // Net tam sayı değilse küsurata göre yanlış sayısını simüle et
-        if (netVal % 1 !== 0) {
-            let diff = D - netVal;
-            Y = Math.round(diff / 0.25);
-            D = Math.floor(netVal) + Y; // 4 yanlış 1 doğruyu götürdüğü için doğru sayısını kompanse et
-        }
-        
-        // Emniyet sınırları (Soru sayısını aşmama kontrolü)
-        if((D + Y) > sub.max) {
-            D = Math.min(Math.round(netVal), sub.max);
-            Y = 0;
-        }
-
-        grandTotalQuestions += sub.max;
-        grandTotalD += D;
-        grandTotalY += Y;
-        grandTotalNet += netVal;
-
-        tbody.innerHTML += `
-            <tr>
-                <td style="text-align: left; font-weight:600;">${sub.name}</td>
-                <td>${sub.max}</td>
-                <td class="text-success-bold">${D}</td>
-                <td class="text-danger-bold">${Y}</td>
-                <td style="font-weight:bold; background:#f7fafc;">${netVal}</td>
-            </tr>`;
+        let netVal = parseFloat(sub.net); let Y = 0; let D = Math.ceil(netVal);
+        if (netVal % 1 !== 0) { let diff = D - netVal; Y = Math.round(diff / 0.25); D = Math.floor(netVal) + Y; }
+        if((D + Y) > sub.max) { D = Math.min(Math.round(netVal), sub.max); Y = 0; }
+        grandTotalQuestions += sub.max; grandTotalD += D; grandTotalY += Y; grandTotalNet += netVal;
+        tbody.innerHTML += `<tr><td style="text-align: left; font-weight:600;">${sub.name}</td><td>${sub.max}</td><td class="text-success-bold">${D}</td><td class="text-danger-bold">${Y}</td><td style="font-weight:bold; background:#f7fafc;">${netVal}</td></tr>`;
     });
-
-    // Toplam Satırı
-    tbody.innerHTML += `
-        <tr style="background:#edf2f7; font-weight:bold; border-top: 2px solid var(--primary-color);">
-            <td style="text-align: left;">GENEL TOPLAM</td>
-            <td>${grandTotalQuestions}</td>
-            <td class="text-success-bold">${grandTotalD}</td>
-            <td class="text-danger-bold">${grandTotalY}</td>
-            <td style="color:#2b6cb0; font-size:16px;">${grandTotalNet.toFixed(2)} Net</td>
-        </tr>`;
+    tbody.innerHTML += `<tr style="background:#edf2f7; font-weight:bold; border-top: 2px solid var(--primary-color);"><td style="text-align: left;">GENEL TOPLAM</td><td>${grandTotalQuestions}</td><td class="text-success-bold">${grandTotalD}</td><td class="text-danger-bold">${grandTotalY}</td><td style="color:#2b6cb0; font-size:16px;">${grandTotalNet.toFixed(2)} Net</td></tr>`;
 }
 
 function updateQuestionCount(studentId, taskKey) {
@@ -505,9 +468,24 @@ function approveMessage(studentId, approvalKey) {
 function rejectMessage(approvalKey) { if(confirm('Mesaj silinsin mi?')) { db.ref("approvals/" + approvalKey).remove(); } }
 
 function updateSelectMenus() {
-    const loginSel = document.getElementById('loginStudentSelect'); const tSel = document.getElementById('taskStudentSelect'); const eSel = document.getElementById('examStudentSelect'); const cSel = document.getElementById('customMsgStudentSelect');
-    if(!loginSel) return; let currentLoginVal = loginSel.value; loginSel.innerHTML = '<option value="">-- İsminizi Seçin --</option>';
+    const loginSel = document.getElementById('loginStudentSelect'); 
+    const tSel = document.getElementById('taskStudentSelect'); 
+    const eSel = document.getElementById('examStudentSelect'); 
+    const cSel = document.getElementById('customMsgStudentSelect');
+    const qSel = document.getElementById('quickStudentSwitchSelect'); // Yeni hızlı geçiş listesi
+    
+    if(!loginSel) return; 
+    let currentLoginVal = loginSel.value; loginSel.innerHTML = '<option value="">-- İsminizi Seçin --</option>';
     students.forEach(s => { loginSel.innerHTML += `<option value="${s.id}">${s.name} (${s.class})</option>`; }); loginSel.value = currentLoginVal;
+    
+    // Hızlı geçiş listesini besle
+    if(qSel) {
+        let currentQ = qSel.value;
+        qSel.innerHTML = '<option value="">-- Öğrenci Seçin --</option>';
+        students.forEach(s => { qSel.innerHTML += `<option value="${s.id}">${s.name} (${s.class})</option>`; });
+        qSel.value = currentQ;
+    }
+
     if(tSel && eSel && cSel) { 
         let currentT = tSel.value; let currentE = eSel.value; let currentC = cSel.value;
         tSel.innerHTML = ''; eSel.innerHTML = ''; cSel.innerHTML = ''; 
