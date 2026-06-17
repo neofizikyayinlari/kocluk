@@ -87,8 +87,8 @@
                     <p id="studentSubInfo" style="opacity: 0.85; margin-top: 2px; font-size: 13px;"></p>
                 </div>
                 <div class="switch-box">
-                    <span style="font-size: 13px; font-weight: 600; white-space: nowrap;">🔄 Hızlı Öğrenci Değiştir:</span>
-                    <select id="quickStudentSwitchSelect" onchange="quickSwitchStudent(this.value)">
+                    <span style="font-size: 13px; font-weight: 600; white-space: nowrap;">🔄 Güvenli Öğrenci Değiştir:</span>
+                    <select id="quickStudentSwitchSelect" onchange="quickSwitchStudentSecure(this.value)">
                         <option value="">Yükleniyor...</option>
                     </select>
                 </div>
@@ -316,13 +316,23 @@ function loginAsStudent() {
     } else { alert('Hatalı Kod!'); }
 }
 
-// YENİ: Öğrenci Panelindeyken Tek Tıkla Başka Öğrenciye Geçiş Yapma Fonksiyonu
-function quickSwitchStudent(targetStudentId) {
+// YENİ VE GÜVENLİ: Hızlı Geçiş Yaparken Giriş Şifresi İsteyen Fonksiyon
+function quickSwitchStudentSecure(targetStudentId) {
     if(!targetStudentId) return;
     let s = students.find(x => x.id === targetStudentId);
     if(s) {
-        loggedInStudentCode = s.id;
-        showStudentDashboard(s);
+        // Kullanıcıdan geçiş yapmak istediği öğrencinin şifresini/kodunu pop-up ile istiyoruz
+        let providedCode = prompt(`${s.name} hesabına geçiş yapmak için 4 haneli giriş kodunu giriniz:`);
+        
+        if(providedCode === s.id) {
+            loggedInStudentCode = s.id;
+            showStudentDashboard(s);
+            alert(`Güvenli geçiş başarılı! Hoş geldin, ${s.name}.`);
+        } else {
+            alert("Hatalı Giriş Kodu! Güvenlik nedeniyle profil geçişi engellendi.");
+            // Seçimi eski (mevcut aktif) öğrenciye geri senkronize et
+            document.getElementById('quickStudentSwitchSelect').value = loggedInStudentCode;
+        }
     }
 }
 
@@ -357,7 +367,6 @@ function showStudentDashboard(s) {
     document.getElementById('welcomeText').innerText = `Hoş geldin, ${s.name}`;
     document.getElementById('studentSubInfo').innerText = `Sınıf: ${s.class} | Detaylı Ödev ve Net Analiz Sistemi`;
     
-    // Hızlı geçiş kutusunun seçili değerini mevcut öğrenci olarak senkronize et
     const quickSwitch = document.getElementById('quickStudentSwitchSelect');
     if(quickSwitch) { quickSwitch.value = s.id; }
 
@@ -431,6 +440,7 @@ function saveSubjectTask() {
     document.getElementById('taskTopicText').value = ''; alert('Ödev başarıyla gönderildi.');
 }
 
+// ... Diğer fonksiyonlar (sendCustomMessage, renderTeacherApprovals, vb.) aynen kararlılıkla korunmaktadır ...
 function sendCustomMessage() {
     const id = document.getElementById('customMsgStudentSelect').value; const msg = document.getElementById('customMsgText').value;
     if(!id) return alert('Lütfen bir öğrenci seçin.'); if(!msg.trim()) return alert('Lütfen mesaj yazın.');
@@ -468,30 +478,11 @@ function approveMessage(studentId, approvalKey) {
 function rejectMessage(approvalKey) { if(confirm('Mesaj silinsin mi?')) { db.ref("approvals/" + approvalKey).remove(); } }
 
 function updateSelectMenus() {
-    const loginSel = document.getElementById('loginStudentSelect'); 
-    const tSel = document.getElementById('taskStudentSelect'); 
-    const eSel = document.getElementById('examStudentSelect'); 
-    const cSel = document.getElementById('customMsgStudentSelect');
-    const qSel = document.getElementById('quickStudentSwitchSelect'); // Yeni hızlı geçiş listesi
-    
-    if(!loginSel) return; 
-    let currentLoginVal = loginSel.value; loginSel.innerHTML = '<option value="">-- İsminizi Seçin --</option>';
+    const loginSel = document.getElementById('loginStudentSelect'); const tSel = document.getElementById('taskStudentSelect'); const eSel = document.getElementById('examStudentSelect'); const cSel = document.getElementById('customMsgStudentSelect'); const qSel = document.getElementById('quickStudentSwitchSelect');
+    if(!loginSel) return; let currentLoginVal = loginSel.value; loginSel.innerHTML = '<option value="">-- İsminizi Seçin --</option>';
     students.forEach(s => { loginSel.innerHTML += `<option value="${s.id}">${s.name} (${s.class})</option>`; }); loginSel.value = currentLoginVal;
-    
-    // Hızlı geçiş listesini besle
-    if(qSel) {
-        let currentQ = qSel.value;
-        qSel.innerHTML = '<option value="">-- Öğrenci Seçin --</option>';
-        students.forEach(s => { qSel.innerHTML += `<option value="${s.id}">${s.name} (${s.class})</option>`; });
-        qSel.value = currentQ;
-    }
-
-    if(tSel && eSel && cSel) { 
-        let currentT = tSel.value; let currentE = eSel.value; let currentC = cSel.value;
-        tSel.innerHTML = ''; eSel.innerHTML = ''; cSel.innerHTML = ''; 
-        students.forEach(s => { let op = `<option value="${s.id}">${s.name} (${s.class})</option>`; tSel.innerHTML += op; eSel.innerHTML += op; cSel.innerHTML += op; }); 
-        tSel.value = currentT; eSel.value = currentE; cSel.value = currentC;
-    }
+    if(qSel) { let currentQ = qSel.value; qSel.innerHTML = '<option value="">-- Öğrenci Seçin --</option>'; students.forEach(s => { qSel.innerHTML += `<option value="${s.id}">${s.name} (${s.class})</option>`; }); qSel.value = currentQ; }
+    if(tSel && eSel && cSel) { let currentT = tSel.value; let currentE = eSel.value; let currentC = cSel.value; tSel.innerHTML = ''; eSel.innerHTML = ''; cSel.innerHTML = ''; students.forEach(s => { let op = `<option value="${s.id}">${s.name} (${s.class})</option>`; tSel.innerHTML += op; eSel.innerHTML += op; cSel.innerHTML += op; }); tSel.value = currentT; eSel.value = currentE; cSel.value = currentC; }
 }
 
 function renderStudentTable() {
@@ -513,46 +504,23 @@ function addStudent() {
     const name = document.getElementById('newStudentName').value.toUpperCase(); const cls = document.getElementById('newStudentClass').value.toUpperCase(); const id = document.getElementById('newStudentCode').value;
     if(!name || !cls || !id) return alert('Lütfen tüm alanları doldurun.');
     db.ref("students/" + id).set({ id: id, name: name, class: cls }, (error) => {
-        if(error) { alert('Hata oluştu.'); } else {
-            alert(`${name} başarıyla eklendi!`);
-            document.getElementById('newStudentName').value = ''; document.getElementById('newStudentClass').value = ''; document.getElementById('newStudentCode').value = '';
-        }
+        if(error) { alert('Hata oluştu.'); } else { alert(`${name} başarıyla eklendi!`); document.getElementById('newStudentName').value = ''; document.getElementById('newStudentClass').value = ''; document.getElementById('newStudentCode').value = ''; }
     });
 }
 
 function deleteStudent(id) { if(confirm('Öğrenci silinsin mi?')) db.ref("students/" + id).remove(); }
 
 function saveExam() {
-    const id = document.getElementById('examStudentSelect').value; const date = document.getElementById('examDate').value;
-    const tur = parseFloat(document.getElementById('netTur').value) || 0; const mat = parseFloat(document.getElementById('netMat').value) || 0;
-    const tar = parseFloat(document.getElementById('netTar').value) || 0; const cog = parseFloat(document.getElementById('netCogr').value) || 0;
-    const fel = parseFloat(document.getElementById('netFel').value) || 0; const din = parseFloat(document.getElementById('netDin').value) || 0;
-    const fiz = parseFloat(document.getElementById('netFiz').value) || 0; const kim = parseFloat(document.getElementById('netKim').value) || 0;
-    const biy = parseFloat(document.getElementById('netBiyo').value) || 0;
-    if(!date) return alert('Sınav adı şart.');
-    let sosTotal = tar + cog + fel + din; let fenTotal = fiz + kim + biy; let totalNet = tur + mat + sosTotal + fenTotal;
+    const id = document.getElementById('examStudentSelect').value; const date = document.getElementById('examDate').value; const tur = parseFloat(document.getElementById('netTur').value) || 0; const mat = parseFloat(document.getElementById('netMat').value) || 0; const tar = parseFloat(document.getElementById('netTar').value) || 0; const cog = parseFloat(document.getElementById('netCogr').value) || 0; const fel = parseFloat(document.getElementById('netFel').value) || 0; const din = parseFloat(document.getElementById('netDin').value) || 0; const fiz = parseFloat(document.getElementById('netFiz').value) || 0; const kim = parseFloat(document.getElementById('netKim').value) || 0; const biy = parseFloat(document.getElementById('netBiyo').value) || 0;
+    if(!date) return alert('Sınav adı şart.'); let sosTotal = tar + cog + fel + din; let fenTotal = fiz + kim + biy; let totalNet = tur + mat + sosTotal + fenTotal;
     db.ref("students/" + id + "/exams").push({ date, tur, mat, sos: sosTotal, fen: fenTotal, tar, cog, fel, din, fiz, kim, biy, total: totalNet.toFixed(2) });
-    document.getElementById('netTur').value = ''; document.getElementById('netMat').value = ''; document.getElementById('netTar').value = ''; document.getElementById('netCogr').value = ''; document.getElementById('netFel').value = ''; document.getElementById('netDin').value = ''; document.getElementById('netFiz').value = ''; document.getElementById('netKim').value = ''; document.getElementById('netBiyo').value = '';
-    alert('Detaylı sınav verisi başarıyla eklendi!');
+    document.getElementById('netTur').value = ''; document.getElementById('netMat').value = ''; document.getElementById('netTar').value = ''; document.getElementById('netCogr').value = ''; document.getElementById('netFel').value = ''; document.getElementById('netDin').value = ''; document.getElementById('netFiz').value = ''; document.getElementById('netKim').value = ''; document.getElementById('netBiyo').value = ''; alert('Detaylı sınav verisi başarıyla eklendi!');
 }
 
 function renderStudentChart(student) {
     const ctx = document.getElementById('studentChart').getContext('2d'); if (currentChart) currentChart.destroy();
     let exams = student.exams ? Object.values(student.exams) : []; let labelDates = exams.map(e => e.date);
-    currentChart = new Chart(ctx, { 
-        type: 'line', 
-        data: { 
-            labels: labelDates, 
-            datasets: [
-                { label: 'Toplam Net', data: exams.map(e => e.total), borderColor: '#2c3e50', borderWidth: 3, fill: false },
-                { label: 'Matematik', data: exams.map(e => e.mat || 0), borderColor: '#e74c3c', borderWidth: 1.5, fill: false },
-                { label: 'Türkçe', data: exams.map(e => e.tur || 0), borderColor: '#2ecc71', borderWidth: 1.5, fill: false },
-                { label: 'Sosyal Bil.', data: exams.map(e => e.sos || 0), borderColor: '#f1c40f', borderWidth: 1.5, fill: false },
-                { label: 'Fen Bil.', data: exams.map(e => e.fen || 0), borderColor: '#9b59b6', borderWidth: 1.5, fill: false }
-            ] 
-        }, 
-        options: { responsive: true, scales: { y: { min: 0, max: 120 } } } 
-    });
+    currentChart = new Chart(ctx, { type: 'line', data: { labels: labelDates, datasets: [{ label: 'Toplam Net', data: exams.map(e => e.total), borderColor: '#2c3e50', borderWidth: 3, fill: false }, { label: 'Matematik', data: exams.map(e => e.mat || 0), borderColor: '#e74c3c', borderWidth: 1.5, fill: false }, { label: 'Türkçe', data: exams.map(e => e.tur || 0), borderColor: '#2ecc71', borderWidth: 1.5, fill: false }, { label: 'Sosyal Bil.', data: exams.map(e => e.sos || 0), borderColor: '#f1c40f', borderWidth: 1.5, fill: false }, { label: 'Fen Bil.', data: exams.map(e => e.fen || 0), borderColor: '#9b59b6', borderWidth: 1.5, fill: false }] }, options: { responsive: true, scales: { y: { min: 0, max: 120 } } } });
 }
 </script>
 </body>
