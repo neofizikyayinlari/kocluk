@@ -9,7 +9,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
     <style>
-        :root { --primary-color: #2c3e50; --accent-color: #e74c3c; --success-color: #2ecc71; --warning-color: #f1c40f; --light-bg: #f8f9fa; --border-color: #dee2e6; }
+        :root { --primary-color: #2c3e50; --accent-color: #e74c3c; --success-color: #2ecc71; --warning-color: #f1c40f; --light-bg: #f8f9fa; --border-color: #dee2e6; --blue-color: #3182ce; }
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body { background-color: #edf2f7; color: #333; padding: 20px; }
         .container { max-width: 1350px; margin: 0 auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
@@ -50,7 +50,7 @@
         .sub-dy-grid input { padding: 6px; font-size: 12px; text-align: center; }
         .sub-label-title { font-size: 12px; font-weight: bold; color: #4a5568; margin-bottom: 2px; }
         
-        .topics-checkbox-container { background: white; border: 1px solid var(--border-color); border-radius: 6px; padding: 12px; max-height: 220px; overflow-y: auto; margin-top: 5px; }
+        .topics-checkbox-container { background: white; border: 1px solid var(--border-color); border-radius: 6px; padding: 12px; max-height: 180px; overflow-y: auto; margin-top: 5px; }
         .category-title { font-size: 12px; font-weight: bold; color: #2b6cb0; margin: 10px 0 6px 0; border-bottom: 1px solid #e2e8f0; padding-bottom: 2px; text-transform: uppercase; }
         .category-title:first-child { margin-top: 0; }
         .topic-check-item { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500; margin-bottom: 6px; cursor: pointer; color: #2d3748; }
@@ -59,6 +59,11 @@
         .switch-box { display: flex; align-items: center; gap: 10px; background: rgba(255, 255, 255, 0.1); padding: 5px 15px; border-radius: 6px; border: 1px solid rgba(255, 255, 255, 0.2); }
         .switch-box select { width: 220px; padding: 6px; font-size: 13px; font-weight: bold; color: var(--primary-color); border-radius: 4px; border: none; }
         .msg-item { background: #fdfdfd; padding: 12px; border-radius: 6px; border: 1px solid var(--border-color); margin-bottom: 10px; }
+        
+        /* YENİ: Raporlama Kartı Ekstra Tasarımları */
+        .report-metric-box { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 15px; }
+        .metric-card { background: white; padding: 15px; border-radius: 6px; border: 1px solid var(--border-color); text-align: center; }
+        .metric-value { font-size: 22px; font-weight: bold; color: var(--primary-color); margin-top: 5px; }
     </style>
 </head>
 <body>
@@ -83,7 +88,7 @@
             </div>
             <div class="form-group">
                 <label>Giriş Kodunuz (6 Haneli Şifreniz)</label>
-                <input type="password" id="studentCodeInput" placeholder="6 Haneli Giriş Şifresi" style="text-align: center; font-size: 16px; letter-spacing: 4px;" maxlength="6">
+                <input type="password" id="studentCodeInput" placeholder="6 Haneli Giriş Şifresi" style="text-align: center; font-size: 16px; letter-spacing: 4px;" maxlength="6" onkeydown="if(event.key === 'Enter') loginAsStudent()">
             </div>
             <button class="btn" onclick="loginAsStudent()" style="width: 100%;">Canlı Sisteme Bağlan</button>
         </div>
@@ -116,7 +121,7 @@
                         <h3>✍️ Hocama Mesaj Gönder</h3>
                         <p style="font-size:12px; color:#7f8c8d; margin-bottom:10px;">Takıldığınız konuları veya sormak istediğiniz soruları buradan doğrudan hocanıza yazabilirsiniz.</p>
                         <div class="form-group">
-                            <textarea id="studentToTeacherMsgText" placeholder="Hocam merhaba, bu haftaki ödev hedefimi tamamladım..." style="height: 70px; resize: none;"></textarea>
+                            <textarea id="studentToTeacherMsgText" placeholder="Hocam merhaba..." style="height: 70px; resize: none;"></textarea>
                         </div>
                         <button class="btn btn-success" onclick="sendMessageToTeacher()" style="width: 100%;">🚀 Mesajı Hocama İlet</button>
                     </div>
@@ -139,7 +144,6 @@
 
                     <div class="card" style="border-top: 4px solid #e74c3c; background:#fffcfc;">
                         <h3>📝 Kendi Deneme Sınavımı Ekle</h3>
-                        <p style="font-size:12px; color:#7f8c8d; margin-bottom:10px;">Evde çözdüğünüz bireysel denemelerin doğru/yanlış sayılarını buraya işleyebilirsiniz.</p>
                         <div class="grid-2">
                             <input type="text" id="studExamDate" placeholder="Örn: Ev Denemesi-1">
                             <select id="studExamType" onchange="toggleStudentInputForm(this.value)">
@@ -212,21 +216,11 @@
                 <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; margin-bottom: 15px;">
                     <h3 id="detailTableTitle" style="margin: 0;">📊 Sınav Sonuç Detaylarım</h3>
                     <div style="display: flex; align-items: center; gap: 10px;">
-                        <span style="font-size: 13px; font-weight: bold; color: #4a5568;">📅 İncelenecek Deneme Sınavını Seçin:</span>
                         <select id="studentExamSelect" onchange="switchExamDetailView(this.value)" style="width: 200px; padding: 5px; font-size: 13px; border: 1px solid var(--primary-color);"></select>
                     </div>
                 </div>
-                <p style="font-size: 12px; color: #7f8c8d; margin-bottom: 10px;">Seçtiğiniz sınavdaki doğru ve yanlış sayılarınız temel alınarak netleriniz sistem tarafından 4 yanlış 1 doğruyu götürecek şekilde hesaplanmıştır.</p>
                 <table class="detail-table">
-                    <thead>
-                        <tr>
-                            <th style="text-align: left;">Ders Adı</th>
-                            <th>Soru Sayısı</th>
-                            <th>Doğru</th>
-                            <th>Yanlış</th>
-                            <th>Net Durumu</th>
-                        </tr>
-                    </thead>
+                    <thead><tr><th style="text-align: left;">Ders Adı</th><th>Soru Sayısı</th><th>Doğru</th><th>Yanlış</th><th>Net Durumu</th></tr></thead>
                     <tbody id="studentDetailTableBody"></tbody>
                 </table>
             </div>
@@ -236,8 +230,8 @@
     <div id="teacher-tab" class="panel">
         <div id="teacherAuth" class="card" style="max-width: 400px; margin: 0 auto; text-align: center;">
             <h3>Yönetici Girişi</h3>
-            <div class="form-group"><input type="password" id="teacherPass" placeholder="Şifre" style="text-align: center;"></div>
-            <button class="btn" onclick="loginAsTeacher()" style="width: 100%;">Panelini Aç</button>
+            <div class="form-group"><input type="password" id="teacherPass" placeholder="Şifre" style="text-align: center;" onkeydown="if(event.key==='Enter') loginAsTeacher()"></div>
+            <button class="btn" onclick="loginAsTeacher()">Panelini Aç</button>
         </div>
 
         <div id="teacherDashboard" style="display: none;">
@@ -261,17 +255,22 @@
                             </div>
                             <div class="form-group">
                                 <label>Mevcut Net</label>
-                                <input type="number" step="0.25" id="taskCurrentNet" value="3" placeholder="Örn: 3">
+                                <input type="number" step="0.25" id="taskCurrentNet" value="3">
                             </div>
                             <div class="form-group">
                                 <label>Hedef Net (+1/+2)</label>
-                                <input type="number" step="0.25" id="taskTargetNet" value="5" placeholder="Örn: 5">
+                                <input type="number" step="0.25" id="taskTargetNet" value="5">
                             </div>
                         </div>
                         
                         <div class="form-group">
-                            <label>Ödev Konuları (Birden Fazla Seçebilirsiniz)</label>
+                            <label>Ödev Konuları (Müfredat Listesi)</label>
                             <div id="taskTopicsCheckboxContainer" class="topics-checkbox-container"></div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Eklemek İstediğiniz Manuel Alt Başlık veya Özel Not</label>
+                            <input type="text" id="taskManualTopicInput" placeholder="Örn: Limit kuralları fasikülü sayfa 40'a kadar veya ekstra soru tarzları">
                         </div>
 
                         <div class="form-group">
@@ -287,7 +286,6 @@
 
                     <div class="card" style="border-left: 5px solid #9b59b6;">
                         <h3>✍️ Öğrenciye Özel Mesaj Gönder</h3>
-                        <p style="font-size:12px; color:#7f8c8d; margin-bottom:10px;">İstediğiniz öğrenciyi seçerek veya "Tümüne İlet" butonunu kullanarak doğrudan bildirim gönderebilirsiniz.</p>
                         <div class="form-group">
                             <label>Öğrenci Seçin</label>
                             <select id="customMsgStudentSelect"></select>
@@ -308,7 +306,7 @@
                             <input type="text" id="newStudentName" placeholder="Adı Soyadı">
                             <input type="text" id="newStudentClass" placeholder="Sınıfı">
                         </div>
-                        <input type="text" id="newStudentCode" placeholder="6 Haneli Giriş Kodu/Şifresi Belirleyin" style="margin-top:10px;" maxlength="6">
+                        <input type="text" id="newStudentCode" placeholder="6 Haneli Giriş Kodu" style="margin-top:10px;" maxlength="6">
                         <button class="btn" onclick="addStudent()" style="margin-top:10px;">🚀 Öğrenciyi Buluta Ekle</button>
                     </div>
                 </div>
@@ -316,13 +314,11 @@
                 <div>
                     <div class="card" style="border-top: 4px solid #2ecc71;">
                         <h3>📥 Öğrencilerden Gelen Canlı Mesajlar</h3>
-                        <p style="font-size:12px; color:#7f8c8d; margin-bottom:10px;">Öğrencilerinizin kendi panellerinden size yazdıkları anlık mesajlar ve sorular burada birikir.</p>
                         <div id="teacherReceivedMessagesArea" style="max-height: 250px; overflow-y: auto;">Herhangi bir yeni mesaj bulunmuyor.</div>
                     </div>
 
                     <div class="card" style="border-top: 4px solid var(--warning-color);">
                         <h3>💬 Onay Bekleyen Motivasyon Mesajları</h3>
-                        <p style="font-size:12px; color:#7f8c8d; margin-bottom:10px;">Öğrencileriniz ödev hedeflerine ulaştığında taslaklar burada birikir.</p>
                         <div id="teacherApprovalArea" style="max-height: 210px; overflow-y: auto;">Herhangi bir onay bekleyen mesaj bulunmuyor.</div>
                     </div>
 
@@ -337,7 +333,6 @@
                         </div>
                         
                         <div style="margin-top: 10px; padding-top:10px; border-top:1px solid #ddd;">
-                            <label style="font-weight:bold; color:#7f8c8d; font-size:13px;">Seçenek A: Manuel Detaylı Giriş</label>
                             <select id="examStudentSelect" style="margin:5px 0;"></select>
                             
                             <div id="teacherTytFormGroup">
@@ -395,48 +390,62 @@
                                 </div>
                             </div>
 
-                            <button class="btn btn-success" onclick="saveExam()" style="margin-top:12px; width:100%; font-size:13px;">Sisteme Detaylı İşle</button>
+                            <button class="btn btn-success" onclick="saveExam()" style="margin-top:12px; width:100%;">Sisteme Detaylı İşle</button>
                         </div>
 
                         <div class="pdf-box">
-                            <label style="font-size:12px; font-weight:bold; color:#2b6cb0; display:block; margin-bottom:5px;">Seçenek B: Gelişmiş PDF Okuyucu (v2 - Sadece TYT)</label>
                             <input type="file" id="pdfFileInput" accept=".pdf" style="font-size:12px;">
-                            <button class="btn" onclick="processPDFv2()" style="margin-top:10px; width:100%; background:#2b6cb0; font-size:13px;">⚡ Hassas PDF Ayrıştırmayı Başlat</button>
-                            <div id="pdfStatus" style="font-size:12px; color:#4a5568; margin-top:5px; font-weight:bold; white-space: pre-line;"></div>
+                            <button class="btn" onclick="processPDFv2()" style="margin-top:10px; width:100%; background:var(--blue-color);">⚡ Hassas PDF Ayrıştırmayı Başlat</button>
+                            <div id="pdfStatus" style="font-size:12px; margin-top:5px; font-weight:bold; white-space: pre-line;"></div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div class="card" style="border-top: 4px solid #3182ce;">
+            <div class="card" style="border-top: 4px solid var(--blue-color);">
                 <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; margin-bottom: 15px;">
                     <h3>🔍 Öğrenci Sınav Arşivi & Detay Gözlem Odası</h3>
                     <div style="display: flex; gap: 15px; flex-wrap: wrap;">
-                        <div>
-                            <label style="font-size:12px; font-weight:bold; color:#4a5568; display:block;">1. Öğrenci Seçin:</label>
-                            <select id="teacherArchiveStudentSelect" onchange="loadStudentExamsToTeacherArchive(this.value)" style="width: 220px; padding: 5px; font-size: 13px;"></select>
-                        </div>
-                        <div>
-                            <label style="font-size:12px; font-weight:bold; color:#4a5568; display:block;">2. Sınav Seçin:</label>
-                            <select id="teacherArchiveExamSelect" onchange="switchTeacherArchiveExamView(this.value)" style="width: 200px; padding: 5px; font-size: 13px;"></select>
-                        </div>
+                        <select id="teacherArchiveStudentSelect" onchange="loadStudentExamsToTeacherArchive(this.value)" style="width: 220px;"></select>
+                        <select id="teacherArchiveExamSelect" onchange="switchTeacherArchiveExamView(this.value)" style="width: 200px;"></select>
                     </div>
                 </div>
                 <div id="teacherArchiveTableArea" style="display:none;">
                     <table class="detail-table">
-                        <thead>
-                            <tr>
-                                <th style="text-align: left;">Ders Adı</th>
-                                <th>Soru Sayısı</th>
-                                <th>Doğru</th>
-                                <th>Yanlış</th>
-                                <th>Net Durumu</th>
-                            </tr>
-                        </thead>
+                        <thead><tr><th style="text-align: left;">Ders Adı</th><th>Soru Sayısı</th><th>Doğru</th><th>Yanlış</th><th>Net Durumu</th></tr></thead>
                         <tbody id="teacherArchiveTableBody"></tbody>
                     </table>
                 </div>
                 <div id="teacherArchiveStatus" style="font-size:13px; color:#7f8c8d; text-align:center; padding:10px;">Lütfen incelemek istediğiniz öğrenciyi seçin.</div>
+            </div>
+
+            <div class="card" style="border-top: 4px solid #9b59b6; background: #faf8ff;">
+                <h3>📊 Gelişmiş Öğrenci Performans & Başarı Raporlama Paneli</h3>
+                <p style="font-size:12px; color:#7f8c8d; margin-bottom:15px;">Seçtiğiniz öğrencinin ödev tamamlama oranlarını ve sınav netlerindeki kümülatif dalgalanmaları buradan takip edebilirsiniz.</p>
+                <div class="form-group" style="max-width: 300px;">
+                    <label>Raporu İncenecek Öğrenciyi Seçin:</label>
+                    <select id="teacherReportStudentSelect" onchange="generateComprehensiveStudentReport(this.value)"><option value="">-- Seçiniz --</option></select>
+                </div>
+                
+                <div id="reportDashboardArea" style="display: none; margin-top:15px;">
+                    <div class="report-metric-box">
+                        <div class="metric-card">📬 Toplam Atanan Ödev<div id="rep_total_tasks" class="metric-value">0</div></div>
+                        <div class="metric-card">📈 Toplam Çözülen Soru<div id="rep_total_questions" class="metric-value">0</div></div>
+                        <div class="metric-card">🏆 Son Sınav Neti<div id="rep_last_exam_net" class="metric-value">0.00</div></div>
+                    </div>
+                    <div style="background: white; padding: 20px; border-radius: 6px; border:1px solid #dee2e6;">
+                        <h4 style="margin-bottom: 8px; font-size:14px; color:#4a5568;">📋 Genel Ödev Başarı / Tamamlama Oranı Ortalama Yüzdesi</h4>
+                        <div class="progress-container" style="height: 24px;"><div id="rep_progress_bar" class="progress-bar" style="width: 0%;"></div><div id="rep_progress_text" class="progress-text" style="line-height:24px; font-size:13px;">%0</div></div>
+                    </div>
+                    <div style="margin-top:15px;">
+                        <h4 style="margin-bottom:8px; font-size:14px; color:#4a5568;">📉 Öğrencinin Sınav Bazlı Toplam Net İlerleme Kronolojisi</h4>
+                        <table class="detail-table">
+                            <thead><tr><th>Sınav Adı</th><th>Sınav Türü</th><th>Toplam Doğru</th><th>Toplam Yanlış</th><th>Hesaplanan Genel Net</th></tr></thead>
+                            <tbody id="teacherReportExamsTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+                <div id="reportEmptyStatus" style="text-align:center; padding:15px; color:gray; font-size:13px; font-weight:500;">Rapor datalarını incelemek için yukarıdan bir öğrenci seçiniz.</div>
             </div>
 
             <div class="card">
@@ -471,40 +480,27 @@ let loggedInStudentCode = null;
 let activeStudentExamsData = {}; 
 let teacherArchiveSelectedStudentExams = {}; 
 
-// REVIZE: Tamamı Kategoriye (TYT-AYT) Ayrılmış YKS Müfredat Konu Havuzu Veri Bankası
 const YKS_TOPICS_DATABASE = {
     "Fizik": {
         "tyt": ["Fizik Bilimine Giriş", "Madde ve Özellikleri", "Hareket ve Kuvvet", "Enerji", "Isı, Sıcaklık ve Genleşme", "Elektrostatik", "Elektrik Akımı ve Devreler", "Manyetizma (TYT)", "Basınç", "Kaldırma Kuvveti", "Dalgalar", "Optik"],
         "ayt": ["Vektörler", "Bağıl Hareket", "Newton’ın Hareket Yasaları", "Bir Boyutta Sabit İvmeli Hareket", "İki Boyutta Hareket (Atışlar)", "Enerji ve İtme-Momentum", "Tork, Denge ve Kütle Merkezi", "Basit Makineler", "Elektriksel Kuvvet, Alan ve Potansiyel", "Düzgün Elektriksel Alan ve Sığaçlar", "Manyetizma ve Elektromanyetik İndüklenme", "Alternatif Akım ve Transformatörler", "Düzgün Çembersel Hareket", "Kütle Çekim ve Kepler Yasaları", "Basit Harmonik Hareket", "Dalga Mekaniği (Kırınım-Girişim-Doppler)", "Elektromanyetik Dalgalar", "Atom Kavramının Tarihsel Gelişimi ve Büyük Patlama", "Radyoaktivite", "Modern Fizik (Rölativite-Kuantum-X Işınları)", "Modern Fiziğin Teknolojideki Uygulamaları"]
     },
     "Matematik": {
-        "tyt": ["Temel Kavramlar ve Sayı Kümeleri", "Bölme-Bölünebilme ve EBOB-EKOK", "Rasyonel ve Ondalık Sayılar", "Birinci Dereceden Denklemler ve Eşitsizlikler", "Mutlak Değer", "Üslü ve Köklü İfadeler", "Çarpanlara Ayırma", "Oran-Oranti", "Problemler (Sayı, Kesir, Yaş, İşçi, Karışım, Hız, Grafik)", "Kümeler ve Kartezyen Çarpım", "Mantık", "Fonksiyonlar (Giriş)", "İstatistik ve Veri", "Permütasyon, Kombinasyon, Binom", "Olasılık"],
-        "ayt": ["Fonksiyonlarda Uygulamalar", "İkinci Dereceden Denklemler ve Karmaşık Sayılar", "Polinomlar", "İkinci Dereceden Fonksiyonlar (Parabol)", "Eşitsizlik Sistemleri", "Trigonometri (AYT)", "Logaritmik Fonksiyonlar", "Aritmetik ve Geometrik Diziler", "Limit ve Süreklilik", "Türev ve Uygulamaları (Maks-Min, Teğet)", "Belirsiz ve Belirli İntegral", "Analitik Geometri", "Çemberin Analitik İncelenmesi", "Katı Cisimler (Uzay Geometri)"]
+        "tyt": ["Temel Kavramlar ve Sayı Kümeleri", "Bölme-Bölünebilme ve EBOB-EKOK", "Rasyonel ve Ondalık Sayılar", "Birinci Dereceden Denklemler ve Eşitsizlikler", "Mutlak Değer", "Üslü ve Köklü İfadeler", "Çarpanlara Ayırma", "Oran-Oranti", "Problemler", "Kümeler", "Mantık", "Fonksiyonlar (Giriş)", "İstatistik ve Veri", "Permütasyon, Kombinasyon", "Olasılık"],
+        "ayt": ["Fonksiyonlarda Uygulamalar", "İkinci Dereceden Denklemler", "Polinomlar", "Parabol", "Eşitsizlik Sistemleri", "Trigonometri (AYT)", "Logaritmik Fonksiyonlar", "Diziler", "Limit ve Süreklilik", "Türev ve Uygulamaları", "İntegral", "Analitik Geometri", "Çemberin Analitigi"]
     },
     "Kimya": {
-        "tyt": ["Kimya Bilimi", "Atomun Yapısı ve Periyodik Sistem", "Kimyasal Türler Arası Etkileşimler", "Maddenin Halleri", "Doğa ve Kimya", "Kimyanın Temel Kanunları ve Kimyasal Hesaplamalar", "Karışımlar", "Asitler, Bazlar ve Tuzlar", "Kimya Her Yerde"],
-        "ayt": ["Modern Atom Teorisi", "Gazlar", "Sıvı Çözeltiler ve Çözünürlük", "Kimyasal Tepkimelerde Enerji", "Kimyasal Tepkimelerde Hız", "Kimyasal Tepkimelerde Denge", "Sulu Çözelti Dengeleri (Asit-Baz, KÇÇ)", "Kimya ve Elektrik (Redoks-Elektroliz)", "Karbon Kimyasına Giriş", "Organik Kimya (Alkan, Alken, Alkin, Alkol, Ester)"]
+        "tyt": ["Kimya Bilimi", "Atom ve Periyodik Sistem", "Kimyasal Türler Arası Etkileşimler", "Maddenin Halleri", "Doğa ve Kimya", "Kimyanın Temel Kanunları", "Karışımlar", "Asitler, Bazlar", "Kimya Her Yerde"],
+        "ayt": ["Modern Atom Teorisi", "Gazlar", "Sıvı Çözeltiler", "Kimyasal Tepkimelerde Enerji", "Kimyasal Tepkimelerde Hız", "Kimyasal Tepchemelerde Denge", "Asit-Baz Dengesi", "Kimya ve Elektrik", "Organik Kimyaya Giriş", "Organik Kimya"]
     },
     "Biyoloji": {
-        "tyt": ["Canlıların Ortak Özellikleri ve Kimyasal Bileşenleri", "Hücrenin Yapısı ve İşlevleri", "Canlıların Çeşitliliği ve Sınıflandırılması", "Hücre Bölünmeleri (Mitoz-Mayoz)", "Kalıtımın Genel İlkeleri", "Ekosistem Ekolojisi ve Güncel Çevre Sorunları"],
-        "ayt": ["İnsan Fizyolojisi (Sinir, Endokrin, Duyu, Destek, Sindirim, Dolaşım, Solunum, Boşaltım, Üreme Sistemleri)", "Komünite ve Popülasyon Ekolojisi", "Nükleik Asitler (DNA-RNA)", "Genetik Şifre ve Protein Sentezi", "Canlılarda Enerji Dönüşümleri (Solunum, Fotosentez, Kemosentez)", "Bitki Biyolojisi (Doku, Organ, Taşıma, Beslenme, Büyüme)", "Canlılar ve Çevre"]
+        "tyt": ["Canlıların Ortak Özellikleri", "Hücre", "Canlıların Sınıflandırılması", "Hücre Bölünmeleri", "Kalıtım", "Ekosistem Ekolojisi"],
+        "ayt": ["İnsan Fizyolojisi ve Sistemler", "Komünite ve Popülasyon Ekolojisi", "Nükleik Asitler", "Protein Sentezi", "Canlılarda Enerji Dönüşümleri", "Bitki Biyolojisi", "Canlılar ve Çevre"]
     },
-    "Türkçe": {
-        "tyt": ["Sözcükte Anlam ve Söz Öbekleri", "Cümlede Anlam (İlişkiler-Yorum)", "Paragrafta Anlatım Teknikleri ve Yapı", "Paragrafta Ana Düşünce ve Yardımcı Düşünceler", "Ses Bilgisi", "Yazım Kuralları", "Noktalama İşaretleri", "Sözcük Türleri (İsim, Sıfat, Zamir, Zarf, Edat, Bağlaç, Ünlem)", "Sözcükte Yapı ve Ekler", "Fiiller, Ek Fiil ve Fiilimsiler", "Cümlenin Ögeleri", "Cümle Türleri", "Anlatım Bozuklukları"],
-        "ayt": ["Güzel Sanatlar ve Edebiyat", "Coşku ve Heyecanı Dile Getiren Metinler (Şiir Bilgisi)", "Edebi Sanatlar (Söz Sanatları)", "Destan Dönemi Türk Edebiyatı", "İslamiyet Etkisindeki Türk Edebiyatı (Geçiş Dönemi)", "Halk Edebiyatı", "Divan Edebiyatı", "Edebi Akımlar", "Tanzimat Dönemi Edebiyatı", "Servetifünun ve Fecriati Edebiyatı", "Milli Edebiyat Dönemi", "Cumhuriyet Dönemi Türk Edebiyatı", "Batı Edebiyatı ve Dünya Edebiyatı"]
-    },
-    "Tarih": {
-        "tyt": ["Tarih Bilimine Giriş", "İnsanlığın İlk Dönemleri", "Orta Çağ’da Dünya", "İlk ve Orta Çağlarda Türk Dünyası", "İslam Medeniyetinin Doğuşu ve İlk İslam Devletleri", "İlk Türk İslam Devletleri", "Yerleşme ve Devletleşme Sürecinde Selçuklu", "Beylikten Devlete Osmanlı Siyaseti (1300-1453)", "Devletleşme Sürecinde Savaşçılar ve Askerler", "Beylikten Devlete Osmanlı Medeniyeti", "Dünya Gücü Osmanlı (1453-1595)", "Sultan ve Merkez Teşkilatı", "Klasik Çağda Osmanlı Toplum Düzeni"],
-        "ayt": ["Değişen Dünya Dengeleri Karşısında Osmanlı (1595-1774)", "Devrimler Çağında Değişen Devlet-Toplum İlişkileri", "Sermaye ve Emek", "XIX. Yüzyılda Değişen Gündelik Hayat", "En Uzun Yüzyıl (1774-1918)", "20. Yüzyıl Başlarında Osmanlı Devleti", "Birinci Dünya Savaşı ve Sonuçları", "Milli Mücadele Hazırlık Dönemi", "Milli Mücadele Cepheleri", "Atatürkçülük ve Atatürk İlkeleri", "Atatürk Dönemi Türk Dış Politikası", "İki Savaş Arasındaki Dönemde Türkiye ve Dünya", "İkinci Dünya Savaşı ve Sonrası Türkiye", "Soğuk Savaş ve Küreselleşen Dünya"]
-    },
-    "Coğrafya": {
-        "tyt": ["Doğa ve İnsan Etkileşimi", "Dünya’nın Şekli ve Hareketleri", "Coğrafi Koordinat Sistemi", "Harita Bilgisi ve Projeksiyonlar", "Atmosfer, Hava Durumu ve İklim", "Yeryüzündeki İklim Tipleri", "Türkiye’nin İklimi", "Yerin İç Yapısı ve İç Kuvvetler", "Yeryüzündeki Dış Kuvvetler", "Türkiye'nin Yerşekilleri", "Su Kaynakları (Okyanuslar, Göller, Akarsular)", "Toprak Tipleri ve Dağılışı", "Bitki Toplulukları", "Nüfusun Özellikleri, Dağılışı ve Piramitler", "Göçlerin Nedenleri ve Sonuçları", "Ekonomik Faaliyetlerin Sınıflandırılması", "Uluslararası Ulaşım Hatları", "Bölge Kavramı ve Türleri", "Doğal Afetler ve Korunma Yolları"],
-        "ayt": ["Ekosistemlerin İşleyişi, Enerji Akışı ve Madde Döngüleri", "Biyoçeşitlilik ve Dağılışını Etkileyen Faktörler", "Nüfus Politikaları ve Şehirlerin Fonksiyonları", "Türkiye’de Nüfus ve Yerleşme Stratejileri", "Üretim, Dağıtım ve Tüketim Sektörleri", "Türkiye’nin Ekonomik Coğrafyası (Tarım, Hayvancılık, Maden, Sanayi)", "Türkiye’nin Doğal Güzellikleri ve Turizmi", "Kültür Bölgeleri ve Türk Kültürü", "Küresel ve Bölgesel Örgütler (BM, NATO, AB vb.)", "Ülkelerin Gelişmişlik Düzeyleri ve Kaynak Kullanımı", "Çevre Sorunları, Atıklar ve Küresel İklim Değişimi", "Sürdürülebilir Kaynak Yönetimi"]
-    },
-    "Felsefe-Din": {
-        "tyt": ["Felsefenin Anlamı ve Konusu", "Bilgi Felsefesi (Epistemoloji)", "Varlık Felsefesi (Ontoloji)", "Ahlak Felsefesi (Aksiyoloji)", "Sanat Felsefesi (Estetik)", "Din Felsefesi", "Siyaset Felsefesi", "Bilim Felsefesi", "Kur'an'a Göre Bazı Kavramlar", "İslam ve İbadet Düzeni", "Hz. Muhammed'in Örnekliği", "İslam Medeniyeti ve Bilim", "Güncel Dini Meseleler"],
-        "ayt": ["Felsefi Okuma ve Yazma", "MÖ 6. Yüzyıl - MS 2. Yüzyıl Felsefesi", "MS 2. Yüzyıl - MS 15. Yüzyıl Felsefesi", "15. Yüzyıl - 17. Yüzyıl Felsefesi", "18. Yüzyıl - 19. Yüzyıl Felsefesi", "20. Yüzyıl Felsefesi", "Klasik Mantık (Kavram, Önerme, Çıkarım)", "Mantık ve Dil", "Sembolik Mantık (Giriş)", "Psikoloji Bilimini Tanıyalım", "Psikolojinin Temel Süreçleri", "Öğrenme, Bellek, Düşünme", "Ruh Sağlığının Temelleri", "Sosyolojiye Giriş", "Birey ve Toplum", "Toplumsal Yapı, Kurumlar ve Değişme", "İslam Düşüncesinde Tasavvufi Yorumlar", "Dünya Dinleri (Yahudilik, Hristiyanlık, Budizm, Hinduizm)"]
-    }
+    "Türkçe": { "tyt": ["Sözcük ve Cümle Anlamı", "Paragraf", "Ses Bilgisi", "Yazım-Noktalama", "Sözcük Türleri", "Cümlenin Ögeleri"], "ayt": ["Şiir Bilgisi", "Edebi Sanatlar", "Divan Edebiyatı", "Tanzimat Edebiyatı", "Milli Edebiyat", "Cumhuriyet Dönemi Edebiyatı"] },
+    "Tarih": { "tyt": ["Tarih ve Zaman", "İlk ve Orta Çağlarda Türk Dünyası", "Osmanlı Siyaseti"], "ayt": ["20. Yüzyıl Başlarında Osmanlı", "Birinci Dünya Savaşı", "Milli Mücadele Cepheleri", "Atatürk İlkeleri"] },
+    "Coğrafya": { "tyt": ["Doğa ve İnsan", "Harita Bilgisi", "İklim Bilgisi", "İç ve Dış Kuvvetler"], "ayt": ["Ekosistemlerin İşleyişi", "Türkiye'nin Ekonomik Coğrafyası", "Küresel Örgütler"] },
+    "Felsefe-Din": { "tyt": ["Felsefeyi Tanıma", "Bilgi ve Varlık Felsefesi", "Ahlak Felsefesi"], "ayt": ["Klasik Mantık", "Psikoloji Bilimi", "Sosyolojiye Giriş", "Dünya Dinleri"] }
 };
 
 const defaultStudents = {
@@ -518,120 +514,38 @@ db.ref("students").on("value", (snapshot) => {
     if(loggedInStudentCode) { let currentStudent = students.find(x => x.id === loggedInStudentCode); if(currentStudent) showStudentDashboard(currentStudent); }
 });
 
-// REVIZE: Seçilen Dersin Alt Konularını Hem TYT Hem AYT Olarak Kategori Halinde Basan Fonksiyon
 function loadSubjectSubTopics(subjectName) {
-    const container = document.getElementById('taskTopicsCheckboxContainer');
-    if (!container) return;
-    container.innerHTML = '';
-    
-    let subjectData = YKS_TOPICS_DATABASE[subjectName];
-    if (!subjectData) {
-        container.innerHTML = '<div style="font-size:12px; color:gray;">Bu ders için konu listesi bulunamadı.</div>';
-        return;
-    }
-    
-    // TYT Kategorisini Oluştur ve Bas
-    if (subjectData.tyt && subjectData.tyt.length > 0) {
-        container.innerHTML += `<div class="category-title">📘 TYT KONULARI (${subjectName})</div>`;
-        subjectData.tyt.forEach(topic => {
-            container.innerHTML += `
-                <label class="topic-check-item">
-                    <input type="checkbox" name="task_topic_checkboxes" value="TYT - ${topic}">
-                    <span>${topic}</span>
-                </label>`;
-        });
-    }
-    
-    // AYT Kategorisini Oluştur ve Bas
-    if (subjectData.ayt && subjectData.ayt.length > 0) {
-        container.innerHTML += `<div class="category-title">📙 AYT KONULARI (${subjectName})</div>`;
-        subjectData.ayt.forEach(topic => {
-            container.innerHTML += `
-                <label class="topic-check-item">
-                    <input type="checkbox" name="task_topic_checkboxes" value="AYT - ${topic}">
-                    <span>${topic}</span>
-                </label>`;
-        });
-    }
+    const container = document.getElementById('taskTopicsCheckboxContainer'); if (!container) return; container.innerHTML = '';
+    let subjectData = YKS_TOPICS_DATABASE[subjectName]; if (!subjectData) { container.innerHTML = '<div style="font-size:12px; color:gray;">Konu bulunamadı.</div>'; return; }
+    if (subjectData.tyt) { container.innerHTML += `<div class="category-title">📘 TYT KONULARI</div>`; subjectData.tyt.forEach(t => { container.innerHTML += `<label class="topic-check-item"><input type="checkbox" name="task_topic_checkboxes" value="TYT-${t}"><span>${t}</span></label>`; }); }
+    if (subjectData.ayt) { container.innerHTML += `<div class="category-title">0b97 AYT KONULARI</div>`; subjectData.ayt.forEach(t => { container.innerHTML += `<label class="topic-check-item"><input type="checkbox" name="task_topic_checkboxes" value="AYT-${t}"><span>${t}</span></label>`; }); }
 }
 
-// İlk sistem açılışında varsayılan olarak Fizik konularını ekrana yükle
-window.addEventListener('DOMContentLoaded', () => {
-    setTimeout(() => { loadSubjectSubTopics("Fizik"); }, 1000);
-});
-
+window.addEventListener('DOMContentLoaded', () => { setTimeout(() => { if(document.getElementById('taskSubjectSelect')) loadSubjectSubTopics("Fizik"); }, 1200); });
 function switchTab(tabId) { document.querySelectorAll('.panel').forEach(p => p.classList.remove('active')); document.getElementById(tabId).classList.add('active'); }
 function loginAsTeacher() { if(document.getElementById('teacherPass').value === '1234') { document.getElementById('teacherAuth').style.display = 'none'; document.getElementById('teacherDashboard').style.display = 'block'; } else { alert('Hatalı Şifre!'); } }
 
 function loginAsStudent() {
-    const selectedId = document.getElementById('loginStudentSelect').value;
-    const code = document.getElementById('studentCodeInput').value;
+    const selectedId = document.getElementById('loginStudentSelect').value; const code = document.getElementById('studentCodeInput').value;
     if(!selectedId || !code) return alert('Eksik alan bırakmayın.');
     let s = students.find(x => x.id === selectedId);
-    if(s && s.id === code) {
-        loggedInStudentCode = code;
-        document.getElementById('studentLoginCard').style.display = 'none';
-        document.getElementById('studentDashboard').style.display = 'block';
-        showStudentDashboard(s);
-    } else { alert('Hatalı Giriş Şifresi!'); }
+    if(s && s.id === code) { loggedInStudentCode = code; document.getElementById('studentLoginCard').style.display = 'none'; document.getElementById('studentDashboard').style.display = 'block'; showStudentDashboard(s); } else { alert('Hatalı Giriş Şifresi!'); }
 }
 
 function quickSwitchStudentSecure(targetStudentId) {
     if(!targetStudentId) return;
     let s = students.find(x => x.id === targetStudentId);
-    if(s) {
-        let providedCode = prompt(`${s.name} hesabına geçiş yapmak için 6 haneli giriş şifresini giriniz:`);
-        if(providedCode === s.id) { loggedInStudentCode = s.id; showStudentDashboard(s); } else { alert("Hatalı Şifre!"); document.getElementById('quickStudentSwitchSelect').value = loggedInStudentCode; }
-    }
+    if(s) { let providedCode = prompt(`${s.name} şifresi:`); if(providedCode === s.id) { loggedInStudentCode = s.id; showStudentDashboard(s); } else { alert("Hatalı Şifre!"); document.getElementById('quickStudentSwitchSelect').value = loggedInStudentCode; } }
 }
 
-function toggleStudentInputForm(type) {
-    if(type === 'TYT') {
-        document.getElementById('studentTytFormGroup').style.display = 'block';
-        document.getElementById('studentAytFormGroup').style.display = 'none';
-    } else {
-        document.getElementById('studentTytFormGroup').style.display = 'none';
-        document.getElementById('studentAytFormGroup').style.display = 'block';
-    }
-}
+function toggleStudentInputForm(type) { if(type === 'TYT') { document.getElementById('studentTytFormGroup').style.display = 'block'; document.getElementById('studentAytFormGroup').style.display = 'none'; } else { document.getElementById('studentTytFormGroup').style.display = 'none'; document.getElementById('studentAytFormGroup').style.display = 'block'; } }
+function toggleTeacherInputForm(type) { if(type === 'TYT') { document.getElementById('teacherTytFormGroup').style.display = 'block'; document.getElementById('teacherAytFormGroup').style.display = 'none'; } else { document.getElementById('teacherTytFormGroup').style.display = 'none'; document.getElementById('teacherAytFormGroup').style.display = 'block'; } }
 
-function toggleTeacherInputForm(type) {
-    if(type === 'TYT') {
-        document.getElementById('teacherTytFormGroup').style.display = 'block';
-        document.getElementById('teacherAytFormGroup').style.display = 'none';
-    } else {
-        document.getElementById('teacherTytFormGroup').style.display = 'none';
-        document.getElementById('teacherAytFormGroup').style.display = 'block';
-    }
-}
-
-function studentChangeOwnPassword() {
-    if(!loggedInStudentCode) return;
-    const newPass = document.getElementById('studentNewPasswordInput').value.trim();
-    if(newPass.length !== 6) return alert("Güvenlik mimarisi gereği şifreniz tam olarak 6 haneli olmalıdır.");
-    if(confirm("Giriş şifrenizi güncellemek istediğinize emin misiniz?")) {
-        db.ref("students/" + loggedInStudentCode).once("value", (snapshot) => {
-            let currentData = snapshot.val(); currentData.id = newPass;
-            db.ref("students/" + newPass).set(currentData, (error) => {
-                if(!error) { db.ref("students/" + loggedInStudentCode).remove(); loggedInStudentCode = newPass; document.getElementById('studentNewPasswordInput').value = ''; alert("Giriş şifreniz başarıyla güncellendi!"); } else { alert("Hata oluştu."); }
-            });
-        });
-    }
-}
-
-function calcNet(d, y) {
-    let res = d - (y / 4);
-    return res < 0 ? 0 : res;
-}
+function calcNet(d, y) { let res = d - (y / 4); return res < 0 ? 0 : res; }
 
 function studentSaveOwnExam() {
-    if(!loggedInStudentCode) return;
-    const date = document.getElementById('studExamDate').value;
-    const type = document.getElementById('studExamType').value;
-    if(!date.trim()) return alert('Lütfen sınav adını boş bırakmayın.');
-
+    if(!loggedInStudentCode) return; const date = document.getElementById('studExamDate').value; const type = document.getElementById('studExamType').value; if(!date.trim()) return alert('Sınav adını yazın.');
     let examPayload = { date, type };
-
     if(type === 'TYT') {
         let t_d = parseInt(document.getElementById('stud_tur_d').value) || 0, t_y = parseInt(document.getElementById('stud_tur_y').value) || 0;
         let m_d = parseInt(document.getElementById('stud_mat_d').value) || 0, m_y = parseInt(document.getElementById('stud_mat_y').value) || 0;
@@ -642,15 +556,9 @@ function studentSaveOwnExam() {
         let fi_d = parseInt(document.getElementById('stud_fiz_d').value) || 0, fi_y = parseInt(document.getElementById('stud_fiz_y').value) || 0;
         let k_d = parseInt(document.getElementById('stud_kim_d').value) || 0, k_y = parseInt(document.getElementById('stud_kim_y').value) || 0;
         let b_d = parseInt(document.getElementById('stud_biy_d').value) || 0, b_y = parseInt(document.getElementById('stud_biy_y').value) || 0;
-
-        let tot_d = t_d + m_d + ta_d + c_d + f_d + di_d + fi_d + k_d + b_d;
-        let tot_y = t_y + m_y + ta_y + c_y + f_y + di_y + fi_y + k_y + b_y;
+        let tot_d = t_d + m_d + ta_d + c_d + f_d + di_d + fi_d + k_d + b_d; let tot_y = t_y + m_y + ta_y + c_y + f_y + di_y + fi_y + k_y + b_y;
         let totalNet = calcNet(t_d, t_y) + calcNet(m_d, m_y) + calcNet(ta_d, ta_y) + calcNet(c_d, c_y) + calcNet(f_d, f_y) + calcNet(di_d, di_y) + calcNet(fi_d, fi_y) + calcNet(k_d, k_y) + calcNet(b_d, b_y);
-
-        Object.assign(examPayload, {
-            tur_d: t_d, tur_y: t_y, mat_d: m_d, mat_y: m_y, tar_d: ta_d, tar_y: ta_y, cog_d: c_d, cog_y: c_y, fel_d: f_d, fel_y: f_y, din_d: di_d, din_y: di_y, fiz_d: fi_d, fiz_y: fi_y, kim_d: k_d, kim_y: k_y, biy_d: b_d, biy_y: b_y,
-            total_d: tot_d, total_y: tot_y, total: totalNet.toFixed(2)
-        });
+        Object.assign(examPayload, { tur_d: t_d, tur_y: t_y, mat_d: m_d, mat_y: m_y, tar_d: ta_d, tar_y: ta_y, cog_d: c_d, cog_y: c_y, fel_d: f_d, fel_y: f_y, din_d: di_d, din_y: di_y, fiz_d: fi_d, fiz_y: fi_y, kim_d: k_d, kim_y: k_y, biy_d: b_d, biy_y: b_y, total_d: tot_d, total_y: tot_y, total: totalNet.toFixed(2) });
     } else {
         let m_d = parseInt(document.getElementById('stud_ayt_mat_d').value) || 0, m_y = parseInt(document.getElementById('stud_ayt_mat_y').value) || 0;
         let ed_d = parseInt(document.getElementById('stud_ayt_edeb_d').value) || 0, ed_y = parseInt(document.getElementById('stud_ayt_edeb_y').value) || 0;
@@ -663,47 +571,25 @@ function studentSaveOwnExam() {
         let fi_d = parseInt(document.getElementById('stud_ayt_fiz_d').value) || 0, fi_y = parseInt(document.getElementById('stud_ayt_fiz_y').value) || 0;
         let k_d = parseInt(document.getElementById('stud_ayt_kim_d').value) || 0, k_y = parseInt(document.getElementById('stud_ayt_kim_y').value) || 0;
         let b_d = parseInt(document.getElementById('stud_ayt_biy_d').value) || 0, b_y = parseInt(document.getElementById('stud_ayt_biy_y').value) || 0;
-
-        let tot_d = m_d + ed_d + t1_d + c1_d + t2_d + c2_d + fe_d + d2_d + fi_d + k_d + b_d;
-        let tot_y = m_y + ed_y + t1_y + c1_y + t2_y + c2_y + fe_y + d2_y + fi_y + k_y + b_y;
+        let tot_d = m_d + ed_d + t1_d + c1_d + t2_d + c2_d + fe_d + d2_d + fi_d + k_d + b_d; let tot_y = m_y + ed_y + t1_y + c1_y + t2_y + c2_y + fe_y + d2_y + fi_y + k_y + b_y;
         let totalNet = calcNet(m_d, m_y) + calcNet(ed_d, ed_y) + calcNet(t1_d, t1_y) + calcNet(c1_d, c1_y) + calcNet(t2_d, t2_y) + calcNet(c2_d, c2_y) + calcNet(fe_d, fe_y) + calcNet(d2_d, d2_y) + calcNet(fi_d, fi_y) + calcNet(k_d, k_y) + calcNet(b_d, b_y);
-
-        Object.assign(examPayload, {
-            ayt_mat_d: m_d, ayt_mat_y: m_y, ayt_edeb_d: ed_d, ayt_edeb_y: ed_y, ayt_tar1_d: t1_d, ayt_tar1_y: t1_y, ayt_cog1_d: c1_d, ayt_cog1_y: c1_y, ayt_tar2_d: t2_d, ayt_tar2_y: t2_y, ayt_cog2_d: c2_d, ayt_cog2_y: c2_y, ayt_fel_d: fe_d, ayt_fel_y: fe_y, ayt_din2_d: d2_d, ayt_din2_y: d2_y, ayt_fiz_d: fi_d, ayt_fiz_y: fi_y, ayt_kim_d: k_d, ayt_kim_y: k_y, ayt_biy_d: b_d, ayt_biy_y: b_y,
-            total_d: tot_d, total_y: tot_y, total: totalNet.toFixed(2)
-        });
+        Object.assign(examPayload, { ayt_mat_d: m_d, ayt_mat_y: m_y, ayt_edeb_d: ed_d, ayt_edeb_y: ed_y, ayt_tar1_d: t1_d, ayt_tar1_y: t1_y, ayt_cog1_d: c1_d, ayt_cog1_y: c1_y, ayt_tar2_d: t2_d, ayt_tar2_y: t2_y, ayt_cog2_d: c2_d, ayt_cog2_y: c2_y, ayt_fel_d: fe_d, ayt_fel_y: fe_y, ayt_din2_d: d2_d, ayt_din2_y: d2_y, ayt_fiz_d: fi_d, ayt_fiz_y: fi_y, ayt_kim_d: k_d, ayt_kim_y: k_y, ayt_biy_d: b_d, ayt_biy_y: b_y, total_d: tot_d, total_y: tot_y, total: totalNet.toFixed(2) });
     }
-
-    db.ref("students/" + loggedInStudentCode + "/exams").push(examPayload, (error) => {
-        if(!error) {
-            alert('Deneme sınavınız profilinize başarıyla işlendi!');
-            document.getElementById('studExamDate').value = '';
-            document.querySelectorAll('#studentTytFormGroup input, #studentAytFormGroup input').forEach(el => el.value = '');
-        }
-    });
+    db.ref("students/" + loggedInStudentCode + "/exams").push(examPayload, (error) => { if(!error) { alert('Sınavınız profilinize işlendi!'); document.getElementById('studExamDate').value = ''; document.querySelectorAll('#studentTytFormGroup input, #studentAytFormGroup input').forEach(el => el.value = ''); } });
 }
 
 function sendMessageToTeacher() {
-    const text = document.getElementById('studentToTeacherMsgText').value; if(!text.trim()) return alert('Lütfen mesajınızı boş bırakmayın.');
+    const text = document.getElementById('studentToTeacherMsgText').value; if(!text.trim()) return alert('Mesaj boş olmaz.');
     let currentStudent = students.find(x => x.id === loggedInStudentCode); if(!currentStudent) return;
     let timestamp = new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }) + " - " + new Date().toLocaleDateString('tr-TR');
-    db.ref("student_messages").push({ studentId: currentStudent.id, studentName: currentStudent.name, message: text, time: timestamp }, (error) => { if(error) { alert('Hata oluştu.'); } else { alert('Mesajınız hocanıza başarıyla canlı olarak iletildi!'); document.getElementById('studentToTeacherMsgText').value = ''; } });
+    db.ref("student_messages").push({ studentId: currentStudent.id, studentName: currentStudent.name, message: text, time: timestamp }, (error) => { if(!error) { alert('Mesaj iletildi!'); document.getElementById('studentToTeacherMsgText').value = ''; } });
 }
 
 function listenTeacherReceivedMessages() {
     const msgArea = document.getElementById('teacherReceivedMessagesArea'); if(!msgArea) return;
     db.ref("student_messages").on("value", (snapshot) => {
         const data = snapshot.val(); if(!data) { msgArea.innerHTML = 'Herhangi bir yeni mesaj bulunmuyor.'; return; }
-        msgArea.innerHTML = '';
-        Object.keys(data).forEach(key => {
-            let m = data[key];
-            msgArea.innerHTML += `
-                <div class="msg-item">
-                    <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:4px;"><span class="student-badge">${m.studentName}</span><span style="color:#7f8c8d; font-weight:600;">${m.time}</span></div>
-                    <p style="font-size:14px; color:#2c3e50; font-weight:500; margin-top:5px; white-space:pre-wrap;">${m.message}</p>
-                    <div style="text-align:right; margin-top:5px;"><button class="btn btn-danger" style="padding:3px 8px; font-size:11px;" onclick="deleteStudentMessage('${key}')">Okundu / Sil</button></div>
-                </div>`;
-        });
+        msgArea.innerHTML = ''; Object.keys(data).forEach(key => { let m = data[key]; msgArea.innerHTML += `<div class="msg-item"><div style="display:flex; justify-content:space-between; font-size:12px;"><span class="student-badge">${m.studentName}</span><b>${m.time}</b></div><p style="font-size:14px; margin-top:5px; white-space:pre-wrap;">${m.message}</p><div style="text-align:right;"><button class="btn btn-danger" style="padding:3px 8px; font-size:11px;" onclick="deleteStudentMessage('${key}')">Sil</button></div></div>`; });
     });
 }
 
@@ -711,9 +597,8 @@ function deleteStudentMessage(key) { db.ref("student_messages/" + key).remove();
 
 function loadStudentExamsToTeacherArchive(studentId) {
     const examSelect = document.getElementById('teacherArchiveExamSelect'); const tableArea = document.getElementById('teacherArchiveTableArea'); const statusDiv = document.getElementById('teacherArchiveStatus');
-    if(!studentId) { tableArea.style.display = 'none'; statusDiv.style.display = 'block'; statusDiv.innerText = "Lütfen incelemek istediğiniz öğrenciyi seçin."; return; }
-    let student = students.find(x => x.id === studentId);
-    if(!student || !student.exams) { examSelect.innerHTML = ''; tableArea.style.display = 'none'; statusDiv.style.display = 'block'; statusDiv.innerText = "Bu öğrenciye ait herhangi bir sınav kaydı bulunamadı."; return; }
+    if(!studentId) { tableArea.style.display = 'none'; statusDiv.style.display = 'block'; return; }
+    let student = students.find(x => x.id === studentId); if(!student || !student.exams) { examSelect.innerHTML = ''; tableArea.style.display = 'none'; statusDiv.style.display = 'block'; return; }
     teacherArchiveSelectedStudentExams = student.exams; let keys = Object.keys(student.exams); examSelect.innerHTML = '';
     keys.forEach(key => { examSelect.innerHTML += `<option value="${key}">${student.exams[key].date} (${student.exams[key].type || 'TYT'})</option>`; });
     statusDiv.style.display = 'none'; tableArea.style.display = 'block'; let lastKey = keys[keys.length - 1]; examSelect.value = lastKey; renderTeacherArchiveTableRowDetails(student.exams[lastKey]);
@@ -724,70 +609,62 @@ function switchTeacherArchiveExamView(examKey) { if(!examKey || !teacherArchiveS
 function calculateAndRenderExamRowDetails(exam) {
     const tbody = document.getElementById('studentDetailTableBody'); const title = document.getElementById('detailTableTitle');
     title.innerText = `📊 Sınav Sonuç Detaylarım (${exam.date} - ${exam.type || 'TYT'})`; tbody.innerHTML = '';
-    
-    let subjects = [];
-    if(!exam.type || exam.type === 'TYT') {
-        subjects = [
-            { name: "Türkçe", max: 40, d: exam.tur_d || 0, y: exam.tur_y || 0 }, { name: "Matematik", max: 40, d: exam.mat_d || 0, y: exam.mat_y || 0 },
-            { name: "Tarih", max: 5, d: exam.tar_d || 0, y: exam.tar_y || 0 }, { name: "Coğrafya", max: 5, d: exam.cog_d || 0, y: exam.cog_y || 0 },
-            { name: "Felsefe", max: 5, d: exam.fel_d || 0, y: exam.fel_y || 0 }, { name: "Din Kültürü", max: 5, d: exam.din_d || 0, y: exam.din_y || 0 },
-            { name: "Fizik", max: 7, d: exam.fiz_d || 0, y: exam.fiz_y || 0 }, { name: "Kimya", max: 7, d: exam.kim_d || 0, y: exam.kim_y || 0 },
-            { name: "Biyoloji", max: 6, d: exam.biy_d || 0, y: exam.biy_y || 0 }
-        ];
-    } else {
-        subjects = [
-            { name: "AYT Matematik", max: 40, d: exam.ayt_mat_d || 0, y: exam.ayt_mat_y || 0 }, { name: "TDE / Edebiyat", max: 24, d: exam.ayt_edeb_d || 0, y: exam.ayt_edeb_y || 0 },
-            { name: "Tarih-1", max: 10, d: exam.ayt_tar1_d || 0, y: exam.ayt_tar1_y || 0 }, { name: "Coğrafya-1", max: 6, d: exam.ayt_cog1_d || 0, y: exam.ayt_cog1_y || 0 },
-            { name: "Tarih-2", max: 11, d: exam.ayt_tar2_d || 0, y: exam.ayt_tar2_y || 0 }, { name: "Coğrafya-2", max: 11, d: exam.ayt_cog2_d || 0, y: exam.ayt_cog2_y || 0 },
-            { name: "Felsefe Grubu", max: 12, d: exam.ayt_fel_d || 0, y: exam.ayt_fel_y || 0 }, { name: "Din Kültürü-2", max: 6, d: exam.ayt_din2_d || 0, y: exam.ayt_din2_y || 0 },
-            { name: "AYT Fizik", max: 14, d: exam.ayt_fiz_d || 0, y: exam.ayt_fiz_y || 0 }, { name: "AYT Kimya", max: 13, d: exam.ayt_kim_d || 0, y: exam.ayt_kim_y || 0 },
-            { name: "AYT Biyoloji", max: 13, d: exam.ayt_biy_d || 0, y: exam.ayt_biy_y || 0 }
-        ];
-    }
-    
-    let grandTotalQuestions = 0; let grandTotalD = 0; let grandTotalY = 0; let grandTotalNet = 0;
-    subjects.forEach(sub => {
-        let n = calcNet(sub.d, sub.y);
-        grandTotalQuestions += sub.max; grandTotalD += sub.d; grandTotalY += sub.y; grandTotalNet += n;
-        tbody.innerHTML += `<tr><td style="text-align: left; font-weight:600;">${sub.name}</td><td>${sub.max}</td><td class="text-success-bold">${sub.d}</td><td class="text-danger-bold">${sub.y}</td><td style="font-weight:bold; background:#f7fafc;">${n.toFixed(2)}</td></tr>`;
-    });
-    tbody.innerHTML += `<tr style="background:#edf2f7; font-weight:bold; border-top: 2px solid var(--primary-color);"><td style="text-align: left;">GENEL TOPLAM</td><td>${grandTotalQuestions}</td><td class="text-success-bold">${grandTotalD}</td><td class="text-danger-bold">${grandTotalY}</td><td style="color:#2b6cb0; font-size:16px;">${grandTotalNet.toFixed(2)} Net</td></tr>`;
+    let subjects = !exam.type || exam.type === 'TYT' ? [
+        { name: "Türkçe", max: 40, d: exam.tur_d || 0, y: exam.tur_y || 0 }, { name: "Matematik", max: 40, d: exam.mat_d || 0, y: exam.mat_y || 0 }, { name: "Tarih", max: 5, d: exam.tar_d || 0, y: exam.tar_y || 0 }, { name: "Coğrafya", max: 5, d: exam.cog_d || 0, y: exam.cog_y || 0 }, { name: "Felsefe", max: 5, d: exam.fel_d || 0, y: exam.fel_y || 0 }, { name: "Din Kültürü", max: 5, d: exam.din_d || 0, y: exam.din_y || 0 }, { name: "Fizik", max: 7, d: exam.fiz_d || 0, y: exam.fiz_y || 0 }, { name: "Kimya", max: 7, d: exam.kim_d || 0, y: exam.kim_y || 0 }, { name: "Biyoloji", max: 6, d: exam.biy_d || 0, y: exam.biy_y || 0 }
+    ] : [
+        { name: "AYT Matematik", max: 40, d: exam.ayt_mat_d || 0, y: exam.ayt_mat_y || 0 }, { name: "TDE / Edebiyat", max: 24, d: exam.ayt_edeb_d || 0, y: exam.ayt_edeb_y || 0 }, { name: "Tarih-1", max: 10, d: exam.ayt_tar1_d || 0, y: exam.ayt_tar1_y || 0 }, { name: "Coğrafya-1", max: 6, d: exam.ayt_cog1_d || 0, y: exam.ayt_cog1_y || 0 }, { name: "Tarih-2", max: 11, d: exam.ayt_tar2_d || 0, y: exam.ayt_tar2_y || 0 }, { name: "Coğrafya-2", max: 11, d: exam.ayt_cog2_d || 0, y: exam.ayt_cog2_y || 0 }, { name: "Felsefe Grubu", max: 12, d: exam.ayt_fel_d || 0, y: exam.ayt_fel_y || 0 }, { name: "Din Kültürü-2", max: 6, d: exam.ayt_din2_d || 0, y: exam.ayt_din2_y || 0 }, { name: "AYT Fizik", max: 14, d: exam.ayt_fiz_d || 0, y: exam.ayt_fiz_y || 0 }, { name: "AYT Kimya", max: 13, d: exam.ayt_kim_d || 0, y: exam.ayt_kim_y || 0 }, { name: "AYT Biyoloji", max: 13, d: exam.ayt_biy_d || 0, y: exam.ayt_biy_y || 0 }
+    ];
+    let grandQ = 0, grandD = 0, grandY = 0, grandN = 0;
+    subjects.forEach(sub => { let n = calcNet(sub.d, sub.y); grandQ += sub.max; grandD += sub.d; grandY += sub.y; grandN += n; tbody.innerHTML += `<tr><td style="text-align: left; font-weight:600;">${sub.name}</td><td>${sub.max}</td><td class="text-success-bold">${sub.d}</td><td class="text-danger-bold">${sub.y}</td><td style="font-weight:bold; background:#f7fafc;">${n.toFixed(2)}</td></tr>`; });
+    tbody.innerHTML += `<tr style="background:#edf2f7; font-weight:bold;"><td style="text-align: left;">GENEL TOPLAM</td><td>${grandQ}</td><td class="text-success-bold">${grandD}</td><td class="text-danger-bold">${grandY}</td><td style="color:#2b6cb0; font-size:16px;">${grandN.toFixed(2)} Net</td></tr>`;
 }
 
 function renderTeacherArchiveTableRowDetails(exam) {
     const tbody = document.getElementById('teacherArchiveTableBody'); tbody.innerHTML = '';
-    let subjects = [];
-    if(!exam.type || exam.type === 'TYT') {
-        subjects = [
-            { name: "Türkçe", max: 40, d: exam.tur_d || 0, y: exam.tur_y || 0 }, { name: "Matematik", max: 40, d: exam.mat_d || 0, y: exam.mat_y || 0 },
-            { name: "Tarih", max: 5, d: exam.tar_d || 0, y: exam.tar_y || 0 }, { name: "Coğrafya", max: 5, d: exam.cog_d || 0, y: exam.cog_y || 0 },
-            { name: "Felsefe", max: 5, d: exam.fel_d || 0, y: exam.fel_y || 0 }, { name: "Din Kültürü", max: 5, d: exam.din_d || 0, y: exam.din_y || 0 },
-            { name: "Fizik", max: 7, d: exam.fiz_d || 0, y: exam.fiz_y || 0 }, { name: "Kimya", max: 7, d: exam.kim_d || 0, y: exam.kim_y || 0 },
-            { name: "Biyoloji", max: 6, d: exam.biy_d || 0, y: exam.biy_y || 0 }
-        ];
+    let subjects = !exam.type || exam.type === 'TYT' ? [
+        { name: "Türkçe", max: 40, d: exam.tur_d || 0, y: exam.tur_y || 0 }, { name: "Matematik", max: 40, d: exam.mat_d || 0, y: exam.mat_y || 0 }, { name: "Tarih", max: 5, d: exam.tar_d || 0, y: exam.tar_y || 0 }, { name: "Coğrafya", max: 5, d: exam.cog_d || 0, y: exam.cog_y || 0 }, { name: "Felsefe", max: 5, d: exam.fel_d || 0, y: exam.fel_y || 0 }, { name: "Din Kültürü", max: 5, d: exam.din_d || 0, y: exam.din_y || 0 }, { name: "Fizik", max: 7, d: exam.fiz_d || 0, y: exam.fiz_y || 0 }, { name: "Kimya", max: 7, d: exam.kim_d || 0, y: exam.kim_y || 0 }, { name: "Biyoloji", max: 6, d: exam.biy_d || 0, y: exam.biy_y || 0 }
+    ] : [
+        { name: "AYT Matematik", max: 40, d: exam.ayt_mat_d || 0, y: exam.ayt_mat_y || 0 }, { name: "TDE / Edebiyat", max: 24, d: exam.ayt_edeb_d || 0, y: exam.ayt_edeb_y || 0 }, { name: "Tarih-1", max: 10, d: exam.ayt_tar1_d || 0, y: exam.ayt_tar1_y || 0 }, { name: "Coğrafya-1", max: 6, d: exam.ayt_cog1_d || 0, y: exam.ayt_cog1_y || 0 }, { name: "Tarih-2", max: 11, d: exam.ayt_tar2_d || 0, y: exam.ayt_tar2_y || 0 }, { name: "Coğrafya-2", max: 11, d: exam.ayt_cog2_d || 0, y: exam.ayt_cog2_y || 0 }, { name: "Felsefe Grubu", max: 12, d: exam.ayt_fel_d || 0, y: exam.ayt_fel_y || 0 }, { name: "Din Kültürü-2", max: 6, d: exam.ayt_din2_d || 0, y: exam.ayt_din2_y || 0 }, { name: "AYT Fizik", max: 14, d: exam.ayt_fiz_d || 0, y: exam.ayt_fiz_y || 0 }, { name: "AYT Kimya", max: 13, d: exam.ayt_kim_d || 0, y: exam.ayt_kim_y || 0 }, { name: "AYT Biyoloji", max: 13, d: exam.ayt_biy_d || 0, y: exam.ayt_biy_y || 0 }
+    ];
+    let grandQ = 0, grandD = 0, grandY = 0, grandN = 0;
+    subjects.forEach(sub => { let n = calcNet(sub.d, sub.y); grandQ += sub.max; grandD += sub.d; grandY += sub.y; grandN += n; tbody.innerHTML += `<tr><td style="text-align: left; font-weight:600;">${sub.name}</td><td>${sub.max}</td><td class="text-success-bold">${sub.d}</td><td class="text-danger-bold">${sub.y}</td><td style="font-weight:bold; background:#f7fafc;">${n.toFixed(2)}</td></tr>`; });
+    tbody.innerHTML += `<tr style="background:#edf2f7; font-weight:bold;"><td style="text-align: left;">GENEL TOPLAM</td><td>${grandQ}</td><td class="text-success-bold">${grandD}</td><td class="text-danger-bold">${grandY}</td><td style="color:#2b6cb0; font-size:16px;">${grandN.toFixed(2)} Net</td></tr>`;
+}
+
+// YENİ: Öğretmenler İçin Devasa 360° Öğrenci Raporlama Algoritması
+function generateComprehensiveStudentReport(studentId) {
+    const dashboard = document.getElementById('reportDashboardArea'); const emptyState = document.getElementById('reportEmptyStatus');
+    if(!studentId) { dashboard.style.display = 'none'; emptyState.style.display = 'block'; return; }
+    let s = students.find(x => x.id === studentId); if(!s) return;
+    emptyState.style.display = 'none'; dashboard.style.display = 'block';
+    
+    // 1. Ödev Metrikleri Hesaplama
+    let totalTasks = s.subjectTasks ? Object.keys(s.subjectTasks).length : 0;
+    let totalDoneQuestions = 0; let kumuTarget = 0; let kumuDone = 0;
+    if(s.subjectTasks) { Object.values(s.subjectTasks).forEach(t => { totalDoneQuestions += parseInt(t.done) || 0; kumuTarget += parseInt(t.target) || 0; kumuDone += parseInt(t.done) || 0; }); }
+    document.getElementById('rep_total_tasks').innerText = totalTasks;
+    document.getElementById('rep_total_questions').innerText = totalDoneQuestions;
+    
+    let avgPercent = kumuTarget > 0 ? Math.min(Math.round((kumuDone / kumuTarget) * 100), 100) : 0;
+    document.getElementById('rep_progress_bar').style.width = avgPercent + "%";
+    document.getElementById('rep_progress_text').innerText = "%" + avgPercent;
+    
+    // 2. Deneme Rapor Kronolojisi
+    const examTableBody = document.getElementById('teacherReportExamsTableBody'); examTableBody.innerHTML = '';
+    let exams = s.exams ? Object.values(s.exams) : [];
+    if(exams.length === 0) {
+        examTableBody.innerHTML = '<tr><td colspan="5">Bu öğrenciye ait girilmiş sınav verisi bulunmuyor.</td></tr>';
+        document.getElementById('rep_last_exam_net').innerText = "0.00";
     } else {
-        subjects = [
-            { name: "AYT Matematik", max: 40, d: exam.ayt_mat_d || 0, y: exam.ayt_mat_y || 0 }, { name: "TDE / Edebiyat", max: 24, d: exam.ayt_edeb_d || 0, y: exam.ayt_edeb_y || 0 },
-            { name: "Tarih-1", max: 10, d: exam.ayt_tar1_d || 0, y: exam.ayt_tar1_y || 0 }, { name: "Coğrafya-1", max: 6, d: exam.ayt_cog1_d || 0, y: exam.ayt_cog1_y || 0 },
-            { name: "Tarih-2", max: 11, d: exam.ayt_tar2_d || 0, y: exam.ayt_tar2_y || 0 }, { name: "Coğrafya-2", max: 11, d: exam.ayt_cog2_d || 0, y: exam.ayt_cog2_y || 0 },
-            { name: "Felsefe Grubu", max: 12, d: exam.ayt_fel_d || 0, y: exam.ayt_fel_y || 0 }, { name: "Din Kültürü-2", max: 6, d: exam.ayt_din2_d || 0, y: exam.ayt_din2_y || 0 },
-            { name: "AYT Fizik", max: 14, d: exam.ayt_fiz_d || 0, y: exam.ayt_fiz_y || 0 }, { name: "AYT Kimya", max: 13, d: exam.ayt_kim_d || 0, y: exam.ayt_kim_y || 0 },
-            { name: "AYT Biyoloji", max: 13, d: exam.ayt_biy_d || 0, y: exam.ayt_biy_y || 0 }
-        ];
+        exams.forEach(ex => { examTableBody.innerHTML += `<tr><td><b>${ex.date}</b></td><td><span class="student-badge">${ex.type || 'TYT'}</span></td><td class="text-success-bold">${ex.total_d || 0}</td><td class="text-danger-bold">${ex.total_y || 0}</td><td style="font-weight:bold; background:#f7fafc;">${ex.total || "0.00"} Net</td></tr>`; });
+        document.getElementById('rep_last_exam_net').innerText = exams[exams.length - 1].total || "0.00";
     }
-    let grandTotalQuestions = 0; let grandTotalD = 0; let grandTotalY = 0; let grandTotalNet = 0;
-    subjects.forEach(sub => {
-        let n = calcNet(sub.d, sub.y);
-        grandTotalQuestions += sub.max; grandTotalD += sub.d; grandTotalY += sub.y; grandTotalNet += n;
-        tbody.innerHTML += `<tr><td style="text-align: left; font-weight:600;">${sub.name}</td><td>${sub.max}</td><td class="text-success-bold">${sub.d}</td><td class="text-danger-bold">${sub.y}</td><td style="font-weight:bold; background:#f7fafc;">${n.toFixed(2)}</td></tr>`;
-    });
-    tbody.innerHTML += `<tr style="background:#edf2f7; font-weight:bold; border-top: 2px solid var(--primary-color);"><td style="text-align: left;">GENEL TOPLAM</td><td>${grandTotalQuestions}</td><td class="text-success-bold">${grandTotalD}</td><td class="text-danger-bold">${grandTotalY}</td><td style="color:#2b6cb0; font-size:16px;">${grandTotalNet.toFixed(2)} Net</td></tr>`;
 }
 
 async function processPDFv2() {
     const fileInput = document.getElementById('pdfFileInput'); const examDate = document.getElementById('examDate').value; const statusDiv = document.getElementById('pdfStatus');
     if(!examDate) return alert('Lütfen önce Sınav Adını yazın.'); if(fileInput.files.length === 0) return alert('Lütfen bir PDF seçin.');
-    statusDiv.innerText = "Hassas tarama başlatıldı. PDF satırları işleniyor..."; const file = fileInput.files[0]; const reader = new FileReader();
+    statusDiv.innerText = "Hassas tarama başlatıldı..."; const file = fileInput.files[0]; const reader = new FileReader();
     reader.onload = async function() {
         try {
             const typedarray = new Uint8Array(this.result); const pdf = await pdfjsLib.getDocument(typedarray).promise; let totalPages = pdf.numPages; let rows = [];
@@ -796,58 +673,42 @@ async function processPDFv2() {
                 textContent.items.forEach(item => { let y = item.transform[5]; if(Math.abs(y - lastY) < 3) { textRows[lastY] += " " + item.str; } else { lastY = y; textRows[y] = item.str; } });
                 Object.values(textRows).forEach(r => { rows.push(r.toUpperCase().trim()); });
             }
-            let matchCount = 0; let skippedStudents = [];
-            students.forEach(student => {
+            let matchCount = 0; students.forEach(student => {
                 const studentNameUpper = student.name.toUpperCase(); let targetRow = rows.find(row => row.includes(studentNameUpper));
                 if(targetRow) {
-                    let tokens = targetRow.match(/-?\d+[\.,]\d+|-?\d+/g) || [];
-                    let validNets = tokens.map(t => parseFloat(t.replace(",", "."))).filter(num => { return num >= -10 && num <= 40 && num !== parseInt(student.id); });
+                    let tokens = targetRow.match(/-?\d+[\.,]\d+|-?\d+/g) || []; let validNets = tokens.map(t => parseFloat(t.replace(",", "."))).filter(num => { return num >= -10 && num <= 40 && num !== parseInt(student.id); });
                     if(validNets.length >= 9) {
                         let tur = validNets[0]; let tar = validNets[1]; let cog = validNets[2]; let fel = validNets[3]; let din = validNets[4]; let mat = validNets[5]; let fiz = validNets[6]; let kim = validNets[7]; let biy = validNets[8];
                         let sosTotal = tar + cog + fel + din; let fenTotal = fiz + kim + biy; let totalNet = tur + mat + sosTotal + fenTotal;
-                        
-                        db.ref("students/" + student.id + "/exams").push({ date: examDate, type: 'TYT', tur_d: Math.round(tur), tur_y: 0, mat_d: Math.round(mat), mat_y: 0, tar_d: Math.round(tar), tar_y: 0, cog_d: Math.round(cog), cog_y: 0, fel_d: Math.round(fel), fel_y: 0, din_d: Math.round(din), din_y: 0, fiz_d: Math.round(fiz), fiz_y: 0, kim_d: Math.round(kim), kim_y: 0, biy_d: Math.round(biy), biy_y: 0, total_d: Math.round(totalNet), total_y: 0, total: totalNet.toFixed(2) });
-                        matchCount++;
-                    } else { skippedStudents.push(student.name); }
+                        db.ref("students/" + student.id + "/exams").push({ date: examDate, type: 'TYT', tur_d: Math.round(tur), tur_y: 0, mat_d: Math.round(mat), mat_y: 0, tar_d: Math.round(tar), tar_y: 0, cog_d: Math.round(cog), cog_y: 0, fel_d: Math.round(fel), fel_y: 0, din_d: Math.round(din), din_y: 0, fiz_d: Math.round(fiz), fiz_y: 0, kim_d: Math.round(kim), kim_y: 0, biy_d: Math.round(biy), biy_y: 0, total_d: Math.round(totalNet), total_y: 0, total: totalNet.toFixed(2) }); matchCount++;
+                    }
                 }
             });
-            let reportMsg = `✅ Hassas Tarama Bitti! **${matchCount}** öğrenci sorunsuz aktarıldı.`; if(skippedStudents.length > 0) { reportMsg += `\n\n⚠️ **Sayısal Kayma Riskiyle Atlananlar:\n- ` + skippedStudents.join("\n- "); }
-            statusDiv.innerHTML = `<span style="color:#2c3e50;">${reportMsg}</span>`; fileInput.value = "";
-        } catch (error) { statusDiv.innerHTML = `<span style="color:red;">❌ Hassas PDF okuma motorunda hata oluştu.</span>`; }
-    };
-    reader.readAsArrayBuffer(file);
+            statusDiv.innerHTML = `✅ Tarama Bitti! **${matchCount}** öğrenci aktarıldı.`; fileInput.value = "";
+        } catch (error) { statusDiv.innerHTML = `❌ Hata oluştu.`; }
+    }; reader.readAsArrayBuffer(file);
 }
 
 function showStudentDashboard(s) {
-    document.getElementById('welcomeText').innerText = `Hoş geldin, ${s.name}`;
-    document.getElementById('studentSubInfo').innerText = `Sınıf: ${s.class} | Detaylı Ödev ve Net Analiz Sistemi`;
-    const quickSwitch = document.getElementById('quickSwitchStudentSelect'); if(quickSwitch) { quickSwitch.value = s.id; }
-    const motArea = document.getElementById('studentMotivationArea');
-    if(s.approvedMotivation) { motArea.innerHTML = `<div class="motivation-box">🚀 <b>Hocandan Mesaj Var:</b> ${s.approvedMotivation}</div>`; } else { motArea.innerHTML = ''; }
-
+    document.getElementById('welcomeText').innerText = `Hoş geldin, ${s.name}`; document.getElementById('studentSubInfo').innerText = `Sınıf: ${s.class} | Detaylı Ödev Sistemi`;
+    const quickSwitch = document.getElementById('quickStudentSwitchSelect'); if(quickSwitch) { quickSwitch.value = s.id; }
+    const motArea = document.getElementById('studentMotivationArea'); if(s.approvedMotivation) { motArea.innerHTML = `<div class="motivation-box">🚀 <b>Hocandan Mesaj Var:</b> ${s.approvedMotivation}</div>`; } else { motArea.innerHTML = ''; }
     const listArea = document.getElementById('studentTasksListArea'); listArea.innerHTML = '';
     if(s.subjectTasks) {
         Object.keys(s.subjectTasks).forEach(key => {
             let t = s.subjectTasks[key]; let percent = Math.min(Math.round((t.done / t.target) * 100), 100) || 0;
-            listArea.innerHTML += `
-                <div class="card" style="background:white; border-left: 5px solid var(--primary-color); padding: 15px; margin-bottom: 10px;">
-                    <div style="display:flex; justify-content:space-between; font-weight:bold; margin-bottom:5px;"><span>📚 ${t.subject} (${t.topic})</span><span style="color:var(--accent-color);">${t.done} / ${t.target} Soru</span></div>
-                    <div class="progress-container"><div class="progress-bar" style="width: ${percent}%;"></div><div class="progress-text">%${percent}</div></div>
-                    <div style="display:flex; gap:10px; margin-top:10px; justify-content:flex-end; align-items:center;"><span style="font-size:13px; font-weight:600;">Çözülen Soru Sayısı:</span><input type="number" id="input_${key}" value="${t.done}" style="width:80px; padding:5px; text-align:center;" min="0"><button class="btn btn-success" style="padding:5px 10px; font-size:12px;" onclick="updateQuestionCount('${s.id}', '${key}')">Güncelle</button></div>
-                </div>`;
+            listArea.innerHTML += `<div class="card" style="background:white; border-left:5px solid var(--primary-color); padding:15px; margin-bottom:10px;"><div style="display:flex; justify-content:space-between; font-weight:bold; margin-bottom:5px;"><span>📚 ${t.subject} (${t.topic})</span><span style="color:var(--accent-color);">${t.done} / ${t.target} Soru</span></div><div class="progress-container"><div class="progress-bar" style="width: ${percent}%;"></div><div class="progress-text">%${percent}</div></div><div style="display:flex; gap:10px; margin-top:10px; justify-content:flex-end; align-items:center;"><span style="font-size:13px; font-weight:600;">Çözülen:</span><input type="number" id="input_${key}" value="${t.done}" style="width:80px; text-align:center;"><button class="btn btn-success" style="padding:5px 10px; font-size:12px;" onclick="updateQuestionCount('${s.id}', '${key}')">Güncelle</button></div></div>`;
         });
-    } else { listArea.innerHTML = 'Şu an aktif bir ödeviniz bulunmuyor.'; }
+    } else { listArea.innerHTML = 'Aktif bir ödeviniz bulunmuyor.'; }
     activeStudentExamsData = s.exams ? s.exams : {}; buildStudentExamSelectMenu(); renderStudentChart(s);
 }
 
 function updateQuestionCount(studentId, taskKey) {
-    let count = parseInt(document.getElementById('input_' + taskKey).value) || 0;
-    if(count < 0) { count = 0; document.getElementById('input_' + taskKey).value = 0; }
+    let count = parseInt(document.getElementById('input_' + taskKey).value) || 0; if(count < 0) count = 0;
     db.ref("students/" + studentId + "/subjectTasks/" + taskKey).update({ done: count }, () => {
         db.ref("students/" + studentId).once("value", (snapshot) => {
             let studentData = snapshot.val(); if (!studentData || !studentData.subjectTasks) return;
-            let totalTarget = 0, totalDone = 0;
-            Object.values(studentData.subjectTasks).forEach(t => { totalTarget += parseInt(t.target) || 0; totalDone += parseInt(t.done) || 0; });
+            let totalTarget = 0, totalDone = 0; Object.values(studentData.subjectTasks).forEach(t => { totalTarget += parseInt(t.target) || 0; totalDone += parseInt(t.done) || 0; });
             let generalPercent = totalTarget > 0 ? Math.min(Math.round((totalDone / totalTarget) * 100), 100) : 0;
             if (generalPercent >= 100) {
                 let draftMessage = `Harika bir haftalık performans ${studentData.name}! Bu hafta senin için planladığımız tüm derslerin toplam soru hedefini (${totalTarget} Soru) başarıyla tamamladın. Toplamda ${totalDone} soru çözerek harika bir disiplin gösterdin. Seninle gurur duyuyorum, aynen devam!`;
@@ -860,102 +721,83 @@ function updateQuestionCount(studentId, taskKey) {
 function buildStudentExamSelectMenu() {
     const selectMenu = document.getElementById('studentExamSelect'); const card = document.getElementById('studentExamDetailCard');
     let keys = Object.keys(activeStudentExamsData); if(keys.length === 0) { card.style.display = 'none'; return; }
-    card.style.display = 'block'; selectMenu.innerHTML = '';
-    keys.forEach(key => { let exam = activeStudentExamsData[key]; selectMenu.innerHTML += `<option value="${key}">${exam.date} (${exam.type || 'TYT'})</option>`; });
+    card.style.display = 'block'; selectMenu.innerHTML = ''; keys.forEach(key => { let exam = activeStudentExamsData[key]; selectMenu.innerHTML += `<option value="${key}">${exam.date} (${exam.type || 'TYT'})</option>`; });
     let lastKey = keys[keys.length - 1]; selectMenu.value = lastKey; calculateAndRenderExamRowDetails(activeStudentExamsData[lastKey]);
 }
 
 function switchExamDetailView(selectedExamKey) { if(!selectedExamKey || !activeStudentExamsData[selectedExamKey]) return; calculateAndRenderExamRowDetails(activeStudentExamsData[selectedExamKey]); }
 
 function suggestTargetQuestions() {
-    const subject = document.getElementById('taskSubjectSelect').value;
-    const currentNet = parseFloat(document.getElementById('taskCurrentNet').value) || 0;
-    let baseQuestions = 100;
-    if (subject === "Matematik" || subject === "Türkçe") { baseQuestions = currentNet > 30 ? 80 : 150; } else { baseQuestions = currentNet > 10 ? 60 : 100; }
+    const subject = document.getElementById('taskSubjectSelect').value; const currentNet = parseFloat(document.getElementById('taskCurrentNet').value) || 0;
+    let baseQuestions = 100; if (subject === "Matematik" || subject === "Türkçe") { baseQuestions = currentNet > 30 ? 80 : 150; } else { baseQuestions = currentNet > 10 ? 60 : 100; }
     document.getElementById('taskTargetQuestions').value = baseQuestions;
 }
 
+// REVIZE: Checkbox Listesi + Manuel Özel Notu Birleştiren Ödev Kaydetme Fonksiyonu
 function saveSubjectTask() {
-    const id = document.getElementById('taskStudentSelect').value; 
-    const subject = document.getElementById('taskSubjectSelect').value; 
-    const target = parseInt(document.getElementById('taskTargetQuestions').value) || 100; 
-    const currentNet = parseFloat(document.getElementById('taskCurrentNet').value) || 3; 
-    const targetNet = parseFloat(document.getElementById('taskTargetNet').value) || 5;
-    if(!id) return alert('Lütfen bir öğrenci seçin.');
+    const id = document.getElementById('taskStudentSelect').value; const subject = document.getElementById('taskSubjectSelect').value; const target = parseInt(document.getElementById('taskTargetQuestions').value) || 100; 
+    const currentNet = parseFloat(document.getElementById('taskCurrentNet').value) || 3; const targetNet = parseFloat(document.getElementById('taskTargetNet').value) || 5;
+    const manualNote = document.getElementById('taskManualTopicInput').value.trim();
+    if(!id) return alert('Öğrenci seçiniz.');
 
-    let selectedTopics = [];
-    document.querySelectorAll('input[name="task_topic_checkboxes"]:checked').forEach(cb => {
-        selectedTopics.push(cb.value);
-    });
-
-    if(selectedTopics.length === 0) return alert('Lütfen ödev için en az bir alt konu seçin.');
-    let topicStr = selectedTopics.join(", ");
+    let selectedTopics = []; document.querySelectorAll('input[name="task_topic_checkboxes"]:checked').forEach(cb => { selectedTopics.push(cb.value); });
+    
+    // Eğer hem checkbox seçilmemiş hem de manuel not girilmemişse uyar
+    if(selectedTopics.length === 0 && manualNote === "") return alert('Lütfen ödev için en az bir konu işaretleyin veya manuel özel not yazın.');
+    
+    // Seçilen konuları ve manuel notu kümülatif olarak birleştir
+    let finalTopicString = selectedTopics.join(", ");
+    if(manualNote !== "") { finalTopicString = finalTopicString !== "" ? finalTopicString + " | Ek Not: " + manualNote : "Özel Görev: " + manualNote; }
 
     let taskKey = subject.toLowerCase().replace(/[^a-z]/g, ""); 
-    db.ref("students/" + id + "/subjectTasks/" + taskKey).set({ 
-        subject, target, topic: topicStr, done: 0, currentNet, targetNet 
-    });
-    alert('Ödev (TYT/AYT) konularıyla birlikte başarıyla gönderildi.');
+    db.ref("students/" + id + "/subjectTasks/" + taskKey).set({ subject, target, topic: finalTopicString, done: 0, currentNet, targetNet });
+    document.getElementById('taskManualTopicInput').value = ''; alert('Ödev başarıyla gönderildi.');
 }
 
 function saveBulkSubjectTask() {
-    const subject = document.getElementById('taskSubjectSelect').value; 
-    const target = parseInt(document.getElementById('taskTargetQuestions').value) || 100; 
-    const currentNet = parseFloat(document.getElementById('taskCurrentNet').value) || 3; 
-    const targetNet = parseFloat(document.getElementById('taskTargetNet').value) || 5;
-    if(students.length === 0) return alert('Sistemde öğrenci bulunamadı.');
+    const subject = document.getElementById('taskSubjectSelect').value; const target = parseInt(document.getElementById('taskTargetQuestions').value) || 100; 
+    const currentNet = parseFloat(document.getElementById('taskCurrentNet').value) || 3; const targetNet = parseFloat(document.getElementById('taskTargetNet').value) || 5;
+    const manualNote = document.getElementById('taskManualTopicInput').value.trim(); if(students.length === 0) return alert('Öğrenci yok.');
 
-    let selectedTopics = [];
-    document.querySelectorAll('input[name="task_topic_checkboxes"]:checked').forEach(cb => {
-        selectedTopics.push(cb.value);
-    });
-
-    if(selectedTopics.length === 0) return alert('Lütfen ödev için en az bir alt konu seçin.');
-    let topicStr = selectedTopics.join(", ");
-
-    if(!confirm(`Mevcut ödevi ve seçilen konuları TÜM (${students.length}) öğrencilere göndermek istiyor musunuz?`)) return;
+    let selectedTopics = []; document.querySelectorAll('input[name="task_topic_checkboxes"]:checked').forEach(cb => { selectedTopics.push(cb.value); });
+    if(selectedTopics.length === 0 && manualNote === "") return alert('Konu veya özel not girilmedi.');
     
+    let finalTopicString = selectedTopics.join(", ");
+    if(manualNote !== "") { finalTopicString = finalTopicString !== "" ? finalTopicString + " | Ek Not: " + manualNote : "Özel Görev: " + manualNote; }
+
+    if(!confirm(`Ödevi TÜM sınıfa göndermek istiyor musunuz?`)) return;
     let taskKey = subject.toLowerCase().replace(/[^a-z]/g, ""); 
-    students.forEach(student => { 
-        db.ref("students/" + student.id + "/subjectTasks/" + taskKey).set({ 
-            subject, target, topic: topicStr, done: 0, currentNet, targetNet 
-        }); 
-    });
-    alert('Toplu ödev (TYT/AYT) konularıyla birlikte sınıfa iletildi!');
+    students.forEach(student => { db.ref("students/" + student.id + "/subjectTasks/" + taskKey).set({ subject, target, topic: finalTopicString, done: 0, currentNet, targetNet }); });
+    document.getElementById('taskManualTopicInput').value = ''; alert('Toplu ödev sınıfa iletildi!');
 }
 
 function sendCustomMessage() {
     const id = document.getElementById('customMsgStudentSelect').value; const msg = document.getElementById('customMsgText').value;
-    if(!id) return alert('Lütfen bir öğrenci seçin.'); if(!msg.trim()) return alert('Lütfen mesaj yazın.'); db.ref("students/" + id).update({ approvedMotivation: msg }, (error) => { if(error) { alert('Hata oldu.'); } else { alert('Özel mesaj iletildi!'); document.getElementById('customMsgText').value = ''; } });
+    if(!id) return alert('Öğrenci seçin.'); if(!msg.trim()) return alert('Mesaj yazın.'); db.ref("students/" + id).update({ approvedMotivation: msg }, (error) => { if(!error) { alert('Özel mesaj iletildi!'); document.getElementById('customMsgText').value = ''; } });
 }
 
 function sendBulkCustomMessage() {
-    const msg = document.getElementById('customMsgText').value; if(!msg.trim()) return alert('Lütfen mesajı yazın.'); if(students.length === 0) return alert('Öğrenci bulunamadı.');
-    if(!confirm(`Bu mesajı TÜM (${students.length}) öğrencilere iletmek istiyor musunuz?`)) return; students.forEach(student => { db.ref("students/" + student.id).update({ approvedMotivation: msg }); }); document.getElementById('customMsgText').value = ''; alert('Ortak mesaj tüm öğrencilere ulaştırıldı!');
+    const msg = document.getElementById('customMsgText').value; if(!msg.trim()) return alert('Mesaj yazın.'); if(students.length === 0) return alert('Öğrenci yok.');
+    if(!confirm(`TÜM öğrencilere ortak bildirim gönderilsin mi?`)) return; students.forEach(student => { db.ref("students/" + student.id).update({ approvedMotivation: msg }); }); document.getElementById('customMsgText').value = ''; alert('Ortak mesaj iletildi!');
 }
 
 function renderTeacherApprovals() {
     const approvalArea = document.getElementById('teacherApprovalArea'); if(!approvalArea) return;
     db.ref("approvals").on("value", (snapshot) => {
         const data = snapshot.val(); if(!data || Object.keys(data).length === 0) { approvalArea.innerHTML = 'Herhangi bir onay bekleyen mesaj bulunmuyor.'; return; }
-        approvalArea.innerHTML = '';
-        Object.keys(data).forEach(key => {
-            let item = data[key];
-            approvalArea.innerHTML += `
-                <div class="approval-item"><span class="student-badge" style="background:#667eea; color:white;">${item.studentName}</span> - <b>${item.subject}</b><textarea id="textarea_${key}" style="margin-top:8px; font-size:13px; height:80px; width:100%; padding:8px; border-radius:4px; border:1px solid #ccc; resize:none;">${item.draft}</textarea><div style="text-align:right; margin-top:8px;"><button class="btn btn-success" style="padding:5px 10px; font-size:12px;" onclick="approveMessage('${item.studentId}', '${key}')">✅ Onayla ve Gönder</button><button class="btn btn-danger" style="padding:5px 10px; font-size:12px;" onclick="rejectMessage('${key}')">❌ İptal Et</button></div></div>`;
-        });
+        approvalArea.innerHTML = ''; Object.keys(data).forEach(key => { let item = data[key]; approvalArea.innerHTML += `<div class="approval-item"><span class="student-badge" style="background:#667eea; color:white;">${item.studentName}</span> - <b>${item.subject}</b><textarea id="textarea_${key}" style="margin-top:8px; font-size:13px; height:80px; width:100%; resize:none;">${item.draft}</textarea><div style="text-align:right; margin-top:8px;"><button class="btn btn-success" style="padding:5px 10px; font-size:12px;" onclick="approveMessage('${item.studentId}', '${key}')">Onayla</button><button class="btn btn-danger" style="padding:5px 10px; font-size:12px;" onclick="rejectMessage('${key}')">İptal</button></div></div>`; });
     });
 }
 
-function approveMessage(studentId, approvalKey) { let finalMessage = document.getElementById('textarea_' + approvalKey).value; db.ref("students/" + studentId).update({ approvedMotivation: finalMessage }); db.ref("approvals/" + approvalKey).remove(); alert("Motivasyon mesajı onaylandı!"); }
-function rejectMessage(approvalKey) { if(confirm('Mesaj silinsin mi?')) { db.ref("approvals/" + approvalKey).remove(); } }
+function approveMessage(studentId, approvalKey) { let finalMessage = document.getElementById('textarea_' + approvalKey).value; db.ref("students/" + studentId).update({ approvedMotivation: finalMessage }); db.ref("approvals/" + approvalKey).remove(); alert("Mesaj onaylandı!"); }
+function rejectMessage(approvalKey) { if(confirm('Silinsin mi?')) { db.ref("approvals/" + approvalKey).remove(); } }
 
 function updateSelectMenus() {
-    const loginSel = document.getElementById('loginStudentSelect'); const tSel = document.getElementById('taskStudentSelect'); const eSel = document.getElementById('examStudentSelect'); const cSel = document.getElementById('customMsgStudentSelect'); const qSel = document.getElementById('quickStudentSwitchSelect'); const archSel = document.getElementById('teacherArchiveStudentSelect');
-    if(!loginSel) return; let currentLoginVal = loginSel.value; loginSel.innerHTML = '<option value="">-- İsminizi Seçin --</option>';
-    students.forEach(s => { loginSel.innerHTML += `<option value="${s.id}">${s.name} (${s.class})</option>`; }); loginSel.value = currentLoginVal;
-    if(qSel) { let currentQ = qSel.value; qSel.innerHTML = '<option value="">-- Öğrenci Seçin --</option>'; students.forEach(s => { qSel.innerHTML += `<option value="${s.id}">${s.name} (${s.class})</option>`; }); qSel.value = currentQ; }
-    if(archSel) { let currentArch = archSel.value; archSel.innerHTML = '<option value="">-- Öğrenci Seçin --</option>'; students.forEach(s => { qSel.innerHTML += `<option value="${s.id}">${s.name} (${s.class})</option>`; }); archSel.value = currentArch; }
+    const loginSel = document.getElementById('loginStudentSelect'); const tSel = document.getElementById('taskStudentSelect'); const eSel = document.getElementById('examStudentSelect'); const cSel = document.getElementById('customMsgStudentSelect'); const qSel = document.getElementById('quickStudentSwitchSelect'); const archSel = document.getElementById('teacherArchiveStudentSelect'); const repSel = document.getElementById('teacherReportStudentSelect');
+    if(!loginSel) return; let currentLoginVal = loginSel.value; loginSel.innerHTML = '<option value="">-- İsminizi Seçin --</option>'; students.forEach(s => { loginSel.innerHTML += `<option value="${s.id}">${s.name} (${s.class})</option>`; }); loginSel.value = currentLoginVal;
+    if(qSel) { let currentQ = qSel.value; qSel.innerHTML = '<option value="">-- Seçin --</option>'; students.forEach(s => { qSel.innerHTML += `<option value="${s.id}">${s.name} (${s.class})</option>`; }); qSel.value = currentQ; }
+    if(archSel) { let currentArch = archSel.value; archSel.innerHTML = '<option value="">-- Seçin --</option>'; students.forEach(s => { archSel.innerHTML += `<option value="${s.id}">${s.name} (${s.class})</option>`; }); archSel.value = currentArch; }
+    if(repSel) { let currentRep = repSel.value; repSel.innerHTML = '<option value="">-- Seçin --</option>'; students.forEach(s => { repSel.innerHTML += `<option value="${s.id}">${s.name} (${s.class})</option>`; }); repSel.value = currentRep; }
     if(tSel && eSel && cSel) { let currentT = tSel.value; let currentE = eSel.value; let currentC = cSel.value; tSel.innerHTML = ''; eSel.innerHTML = ''; cSel.innerHTML = ''; students.forEach(s => { let op = `<option value="${s.id}">${s.name} (${s.class})</option>`; tSel.innerHTML += op; eSel.innerHTML += op; cSel.innerHTML += op; }); tSel.value = currentT; eSel.value = currentE; cSel.value = currentC; }
 }
 
@@ -963,26 +805,22 @@ function renderStudentTable() {
     const tbody = document.getElementById('studentTableBody'); if(!tbody) return; tbody.innerHTML = '';
     students.forEach((s) => {
         let exams = s.exams ? Object.values(s.exams) : []; let lastEx = exams.length > 0 ? exams[exams.length-1] : null; let examStr = lastEx ? `<b>${lastEx.total} Net</b>` : '<i>Veri Yok</i>';
-        let taskSummary = "";
-        if(s.subjectTasks) { Object.values(s.subjectTasks).forEach(t => { let p = Math.min(Math.round((t.done / t.target) * 100), 100) || 0; taskSummary += `<span class="student-badge" style="margin-right:4px; display:inline-block; margin-bottom:2px; background:${p===100?'#c6f6d5':'#feebc8'}; color:${p===100?'#22543d':'#744210'}">${t.subject}: %${p}</span>`; }); } else { taskSummary = '<i>Ödev Yok</i>'; }
+        let taskSummary = ""; if(s.subjectTasks) { Object.values(s.subjectTasks).forEach(t => { let p = Math.min(Math.round((t.done / t.target) * 100), 100) || 0; taskSummary += `<span class="student-badge" style="margin-right:4px; display:inline-block; background:${p===100?'#c6f6d5':'#feebc8'}; color:${p===100?'#22543d':'#744210'}">${t.subject}: %${p}</span>`; }); } else { taskSummary = '<i>Ödev Yok</i>'; }
         tbody.innerHTML += `<tr><td><span class="student-badge">${s.class}</span></td><td><b>${s.name}</b></td><td><code>${s.id}</code></td><td>${taskSummary}</td><td>${examStr}</td><td><button class="btn btn-danger" style="padding:4px 8px; font-size:12px;" onclick="deleteStudent('${s.id}')">Sil</button></td></tr>`;
     });
 }
 
 function addStudent() {
     const name = document.getElementById('newStudentName').value.toUpperCase(); const cls = document.getElementById('newStudentClass').value.toUpperCase(); const id = document.getElementById('newStudentCode').value.trim();
-    if(!name || !cls || !id) return alert('Lütfen tüm alanları doldurun.'); if(id.length !== 6) return alert('Lütfen tam olarak 6 haneli bir başlangıç şifresi belirleyin.');
-    db.ref("students/" + id).set({ id: id, name: name, class: cls }, (error) => { if(error) { alert('Hata oluştu.'); } else { alert(`${name} başarıyla eklendi!`); document.getElementById('newStudentName').value = ''; document.getElementById('newStudentClass').value = ''; document.getElementById('newStudentCode').value = ''; } });
+    if(!name || !cls || !id) return alert('Tüm alanları doldurun.'); if(id.length !== 6) return alert('Giriş kodu 6 haneli olmalı.');
+    db.ref("students/" + id).set({ id: id, name: name, class: cls }, (error) => { if(!error) { alert(`${name} eklendi!`); document.getElementById('newStudentName').value = ''; document.getElementById('newStudentClass').value = ''; document.getElementById('newStudentCode').value = ''; } });
 }
 
 function deleteStudent(id) { if(confirm('Öğrenci silinsin mi?')) db.ref("students/" + id).remove(); }
 
 function saveExam() {
-    const id = document.getElementById('examStudentSelect').value; const date = document.getElementById('examDate').value; const type = document.getElementById('examType').value;
-    if(!date) return alert('Sınav adı şart.');
-
+    const id = document.getElementById('examStudentSelect').value; const date = document.getElementById('examDate').value; const type = document.getElementById('examType').value; if(!date) return alert('Sınav adı şart.');
     let examPayload = { date, type };
-
     if(type === 'TYT') {
         let t_d = parseInt(document.getElementById('netTur_d').value) || 0, t_y = parseInt(document.getElementById('netTur_y').value) || 0;
         let m_d = parseInt(document.getElementById('netMat_d').value) || 0, m_y = parseInt(document.getElementById('netMat_y').value) || 0;
@@ -993,15 +831,9 @@ function saveExam() {
         let fi_d = parseInt(document.getElementById('netFiz_d').value) || 0, fi_y = parseInt(document.getElementById('netFiz_y').value) || 0;
         let k_d = parseInt(document.getElementById('netKim_d').value) || 0, k_y = parseInt(document.getElementById('netKim_y').value) || 0;
         let b_d = parseInt(document.getElementById('netBiyo_d').value) || 0, b_y = parseInt(document.getElementById('netBiyo_y').value) || 0;
-
-        let tot_d = t_d + m_d + ta_d + c_d + f_d + di_d + fi_d + k_d + b_d;
-        let tot_y = t_y + m_y + ta_y + c_y + f_y + di_y + fi_y + k_y + b_y;
+        let tot_d = t_d + m_d + ta_d + c_d + f_d + di_d + fi_d + k_d + b_d; let tot_y = t_y + m_y + ta_y + c_y + f_y + di_y + fi_y + k_y + b_y;
         let totalNet = calcNet(t_d, t_y) + calcNet(m_d, m_y) + calcNet(ta_d, ta_y) + calcNet(c_d, c_y) + calcNet(f_d, f_y) + calcNet(di_d, di_y) + calcNet(fi_d, fi_y) + calcNet(k_d, k_y) + calcNet(b_d, b_y);
-
-        Object.assign(examPayload, {
-            tur_d: t_d, tur_y: t_y, mat_d: m_d, mat_y: m_y, tar_d: ta_d, tar_y: ta_y, cog_d: c_d, cog_y: c_y, fel_d: f_d, fel_y: f_y, din_d: di_d, din_y: di_y, fiz_d: fi_d, fiz_y: fi_y, kim_d: k_d, kim_y: k_y, biy_d: b_d, biy_y: b_y,
-            total_d: tot_d, total_y: tot_y, total: totalNet.toFixed(2)
-        });
+        Object.assign(examPayload, { tur_d: t_d, tur_y: t_y, mat_d: m_d, mat_y: m_y, tar_d: ta_d, tar_y: ta_y, cog_d: c_d, cog_y: c_y, fel_d: f_d, fel_y: f_y, din_d: di_d, din_y: di_y, fiz_d: fi_d, fiz_y: fi_y, kim_d: k_d, kim_y: k_y, biy_d: b_d, biy_y: b_y, total_d: tot_d, total_y: tot_y, total: totalNet.toFixed(2) });
     } else {
         let m_d = parseInt(document.getElementById('ayt_mat_d').value) || 0, m_y = parseInt(document.getElementById('ayt_mat_y').value) || 0;
         let ed_d = parseInt(document.getElementById('ayt_edeb_d').value) || 0, ed_y = parseInt(document.getElementById('ayt_edeb_y').value) || 0;
@@ -1014,64 +846,17 @@ function saveExam() {
         let fi_d = parseInt(document.getElementById('ayt_fiz_d').value) || 0, fi_y = parseInt(document.getElementById('ayt_fiz_y').value) || 0;
         let k_d = parseInt(document.getElementById('ayt_kim_d').value) || 0, k_y = parseInt(document.getElementById('ayt_kim_y').value) || 0;
         let b_d = parseInt(document.getElementById('ayt_biy_d').value) || 0, b_y = parseInt(document.getElementById('ayt_biy_y').value) || 0;
-
-        let tot_d = m_d + ed_d + t1_d + c1_d + t2_d + c2_d + fe_d + d2_d + fi_d + k_d + b_d;
-        let tot_y = m_y + ed_y + t1_y + c1_y + t2_y + c2_y + fe_y + d2_y + fi_y + k_y + b_y;
+        let tot_d = m_d + ed_d + t1_d + c1_d + t2_d + c2_d + fe_d + d2_d + fi_d + k_d + b_d; let tot_y = m_y + ed_y + t1_y + c1_y + t2_y + c2_y + fe_y + d2_y + fi_y + k_y + b_y;
         let totalNet = calcNet(m_d, m_y) + calcNet(ed_d, ed_y) + calcNet(t1_d, t1_y) + calcNet(c1_d, c1_y) + calcNet(t2_d, t2_y) + calcNet(c2_d, c2_y) + calcNet(fe_d, fe_y) + calcNet(d2_d, d2_y) + calcNet(fi_d, fi_y) + calcNet(k_d, k_y) + calcNet(b_d, b_y);
-
-        Object.assign(examPayload, {
-            ayt_mat_d: m_d, ayt_mat_y: m_y, ayt_edeb_d: ed_d, ayt_edeb_y: ed_y, ayt_tar1_d: t1_d, ayt_tar1_y: t1_y, ayt_cog1_d: c1_d, ayt_cog1_y: c1_y, ayt_tar2_d: t2_d, ayt_tar2_y: t2_y, ayt_cog2_d: c2_d, ayt_cog2_y: c2_y, ayt_fel_d: fe_d, ayt_fel_y: fe_y, ayt_din2_d: d2_d, ayt_din2_y: d2_y, ayt_fiz_d: fi_d, ayt_fiz_y: fi_y, ayt_kim_d: k_d, ayt_kim_y: k_y, ayt_biy_d: b_d, ayt_biy_y: b_y,
-            total_d: tot_d, total_y: tot_y, total: totalNet.toFixed(2)
-        });
+        Object.assign(examPayload, { ayt_mat_d: m_d, ayt_mat_y: m_y, ayt_edeb_d: ed_d, ayt_edeb_y: ed_y, ayt_tar1_d: t1_d, ayt_tar1_y: t1_y, ayt_cog1_d: c1_d, ayt_cog1_y: c1_y, ayt_tar2_d: t2_d, ayt_tar2_y: t2_y, ayt_cog2_d: c2_d, ayt_cog2_y: c2_y, ayt_fel_d: fe_d, ayt_fel_y: fe_y, ayt_din2_d: d2_d, ayt_din2_y: d2_y, ayt_fiz_d: fi_d, ayt_fiz_y: fi_y, ayt_kim_d: k_d, ayt_kim_y: k_y, ayt_biy_d: b_d, ayt_biy_y: b_y, total_d: tot_d, total_y: tot_y, total: totalNet.toFixed(2) });
     }
-
-    db.ref("students/" + id + "/exams").push(examPayload, (error) => { if(!error) { alert('Detaylı sınav verisi başarıyla eklendi!'); document.getElementById('examDate').value = ''; document.querySelectorAll('#teacherTytFormGroup input, #teacherAytFormGroup input').forEach(el => el.value = ''); } });
+    db.ref("students/" + id + "/exams").push(examPayload, (error) => { if(!error) { alert('Sınav verisi başarıyla eklendi!'); document.getElementById('examDate').value = ''; document.querySelectorAll('#teacherTytFormGroup input, #teacherAytFormGroup input').forEach(el => el.value = ''); } });
 }
 
 function renderStudentChart(student) {
-    const ctx = document.getElementById('studentChart').getContext('2d'); 
-    if (currentChart) currentChart.destroy(); 
-    
-    let exams = student.exams ? Object.values(student.exams) : []; 
-    let labelDates = exams.map(e => e.date); 
-    
-    currentChart = new Chart(ctx, { 
-        type: 'bar', 
-        data: { 
-            labels: labelDates, 
-            datasets: [
-                { 
-                    label: 'Toplam Doğru Sayısı', 
-                    data: exams.map(e => e.total_d || 0), 
-                    backgroundColor: '#2ecc71', 
-                    borderColor: '#27ae60',
-                    borderWidth: 1,
-                    borderRadius: 4
-                }, 
-                { 
-                    label: 'Toplam Yanlış Sayısı', 
-                    data: exams.map(e => e.total_y || 0), 
-                    backgroundColor: '#e74c3c', 
-                    borderColor: '#c0392b',
-                    borderWidth: 1,
-                    borderRadius: 4
-                }
-            ] 
-        }, 
-        options: { 
-            responsive: true, 
-            scales: { 
-                y: { 
-                    min: 0, 
-                    max: 120, 
-                    ticks: { stepSize: 10 }
-                } 
-            },
-            plugins: {
-                legend: { position: 'top' }
-            }
-        } 
-    });
+    const ctx = document.getElementById('studentChart').getContext('2d'); if (currentChart) currentChart.destroy();
+    let exams = student.exams ? Object.values(student.exams) : []; let labelDates = exams.map(e => e.date);
+    currentChart = new Chart(ctx, { type: 'bar', data: { labels: labelDates, datasets: [{ label: 'Toplam Doğru', data: exams.map(e => e.total_d || 0), backgroundColor: '#2ecc71', borderRadius: 4 }, { label: 'Toplam Yanlış', data: exams.map(e => e.total_y || 0), backgroundColor: '#e74c3c', borderRadius: 4 }] }, options: { responsive: true, scales: { y: { min: 0, max: 120 } } } });
 }
 </script>
 </body>
