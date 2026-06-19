@@ -50,8 +50,9 @@
         .sub-dy-grid input { padding: 6px; font-size: 12px; text-align: center; }
         .sub-label-title { font-size: 12px; font-weight: bold; color: #4a5568; margin-bottom: 2px; }
         
-        /* YENİ: Çoklu Konu Seçim Kutusu Tasarımı */
-        .topics-checkbox-container { background: white; border: 1px solid var(--border-color); border-radius: 6px; padding: 12px; max-height: 160px; overflow-y: auto; margin-top: 5px; }
+        .topics-checkbox-container { background: white; border: 1px solid var(--border-color); border-radius: 6px; padding: 12px; max-height: 220px; overflow-y: auto; margin-top: 5px; }
+        .category-title { font-size: 12px; font-weight: bold; color: #2b6cb0; margin: 10px 0 6px 0; border-bottom: 1px solid #e2e8f0; padding-bottom: 2px; text-transform: uppercase; }
+        .category-title:first-child { margin-top: 0; }
         .topic-check-item { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500; margin-bottom: 6px; cursor: pointer; color: #2d3748; }
         .topic-check-item input { width: auto; margin: 0; cursor: pointer; }
         .switch-student-container { display: flex; justify-content: space-between; align-items: center; background: var(--primary-color); color: white; padding: 15px 25px; border-radius: 8px; margin-bottom: 20px; gap: 15px; }
@@ -315,7 +316,7 @@
                 <div>
                     <div class="card" style="border-top: 4px solid #2ecc71;">
                         <h3>📥 Öğrencilerden Gelen Canlı Mesajlar</h3>
-                        <p style="font-size:12px; color:#7f8c8d; margin-bottom:10px;">Öğrencilerinizin kendi panellerinden size yazdıkları anlık mesajlar burada birikir.</p>
+                        <p style="font-size:12px; color:#7f8c8d; margin-bottom:10px;">Öğrencilerinizin kendi panellerinden size yazdıkları anlık mesajlar ve sorular burada birikir.</p>
                         <div id="teacherReceivedMessagesArea" style="max-height: 250px; overflow-y: auto;">Herhangi bir yeni mesaj bulunmuyor.</div>
                     </div>
 
@@ -470,16 +471,40 @@ let loggedInStudentCode = null;
 let activeStudentExamsData = {}; 
 let teacherArchiveSelectedStudentExams = {}; 
 
-// YENİ: YKS Müfredat Konu Havuzu Veri Bankası
+// REVIZE: Tamamı Kategoriye (TYT-AYT) Ayrılmış YKS Müfredat Konu Havuzu Veri Bankası
 const YKS_TOPICS_DATABASE = {
-    "Fizik": ["Vektörler-Kuvvet", "Bağıl Hareket", "Newton'ın Hareket Yasaları", "Tork ve Denge", "Kütle Merkezi", "Basit Makineler", "Elektriksel Kuvvet ve Alan", "Sığaçlar", "Manyetizma", "Çembersel Hareket", "Kepler Yasaları", "Basit Harmonik Hareket", "Dalga Mekaniği", "Atom Fiziği ve Radyoaktivite", "Modern Fizik"],
-    "Matematik": ["Temel Kavramlar", "Üslü-Köklü Sayılar", "Denklemler ve Eşitsizlikler", "Fonksiyonlar", "Polinomlar", "İkinci Dereceden Denklemler", "Permütasyon-Kombinasyon-Olasılık", "Trigonometri", "Logaritma", "Diziler", "Limit ve Süreklilik", "Türev ve Uygulamaları", "İntegral", "Analitik Geometri", "Çember ve Daire"],
-    "Kimya": ["Kimya Bilimi", "Atom ve Periyodik Sistem", "Kimyasal Türler Arası Etkileşimler", "Maddenin Halleri", "Kimyanın Temel Kanunları", "Mol Kavramı", "Karışımlar", "Modern Atom Teorisi", "Gazlar", "Sıvı Çözeltiler", "Kimyasal Tepkimelerde Enerji", "Kimyasal Tepkimelerde Hız ve Denge", "Asit-Baz Dengesi", "Elektrokimya", "Karbon Kimyasına Giriş-Organik"],
-    "Biyoloji": ["Canlıların Ortak Özellikleri", "Hücre ve Yapısı", "Canlıların Sınıflandırılması", "Hücre Bölünmeleri", "Kalıtım", "Ekosistem Ekolojisi", "Nükleik Asitler-Protein Sentezi", "Fotosentez ve Kemosentez", "Hücresel Solunum", "Bitki Biyolojisi", "İnsan Fizyolojisi ve Sistemler", "Canlılar ve Çevre"],
-    "Türkçe": ["Sözcük ve Cümle Anlamı", "Paragrafta Ana Düşünce-Yapı", "Ses Bilgisi", "Yazım Kuralları ve Noktalama", "Sözcük Türleri (İsim, Sıfat vb.)", "Cümlenin Ögeleri", "Fiil Çatısı", "Edebi Sanatlar", "Şiir Bilgisi", "İslamiyet Öncesi-Halk Edebiyatı", "Divan Edebiyatı", "Tanzimat-Servetifünun-Fecriati", "Milli Edebiyat", "Cumhuriyet Dönemi Edebiyatı"],
-    "Tarih": ["Tarih ve Zaman", "İlk ve Orta Çağlarda Türk Dünyası", "İslam Medeniyetinin Doğuşu", "İlk Türk İslam Devletleri", "Osmanlı Kuruluş-Yükselme", "Yeni ve Yakın Çağda Avrupa", "Osmanlı Arayış-Değişim Dönemi", "20. Yüzyıl Başlarında Osmanlı", "Birinci Dünya Savaşı", "Kurtuluş Savaşı Hazırlık", "Milli Mücadele Cepheler", "Atatürk İlke ve İnkılapları"],
-    "Coğrafya": ["Doğa ve İnsan", "Dünya'nın Şekli ve Hareketleri", "Coğrafi Konum-Harita Bilgisi", "Atmosfer ve İklim Bilgisi", "Dünya'nın İç Yapısı ve İç Kuvvetler", "Dış Kuvvetler", "Türkiye'nin Coğrafi Konumu", "Nüfus ve Yerleşme", "Ekonomik Faaliyetler", "Bölgeler ve Ülkeler", "Doğal Afetler ve Çevre"],
-    "Felsefe-Din": ["Felsefeyi Tanıma", "Bilgi-Varlık Felsefesi", "Ahlak-Sanat-Din Felsefesi", "Siyaset-Bilim Felsefesi", "Kur'an ve Yorumu", "Hz. Muhammed'in Hayatı", "İslam ve Bilim", "İslam Düşüncesinde Yorumlar", "Dünya Dinleri", "İnançla İlgili Meseleler"]
+    "Fizik": {
+        "tyt": ["Fizik Bilimine Giriş", "Madde ve Özellikleri", "Hareket ve Kuvvet", "Enerji", "Isı, Sıcaklık ve Genleşme", "Elektrostatik", "Elektrik Akımı ve Devreler", "Manyetizma (TYT)", "Basınç", "Kaldırma Kuvveti", "Dalgalar", "Optik"],
+        "ayt": ["Vektörler", "Bağıl Hareket", "Newton’ın Hareket Yasaları", "Bir Boyutta Sabit İvmeli Hareket", "İki Boyutta Hareket (Atışlar)", "Enerji ve İtme-Momentum", "Tork, Denge ve Kütle Merkezi", "Basit Makineler", "Elektriksel Kuvvet, Alan ve Potansiyel", "Düzgün Elektriksel Alan ve Sığaçlar", "Manyetizma ve Elektromanyetik İndüklenme", "Alternatif Akım ve Transformatörler", "Düzgün Çembersel Hareket", "Kütle Çekim ve Kepler Yasaları", "Basit Harmonik Hareket", "Dalga Mekaniği (Kırınım-Girişim-Doppler)", "Elektromanyetik Dalgalar", "Atom Kavramının Tarihsel Gelişimi ve Büyük Patlama", "Radyoaktivite", "Modern Fizik (Rölativite-Kuantum-X Işınları)", "Modern Fiziğin Teknolojideki Uygulamaları"]
+    },
+    "Matematik": {
+        "tyt": ["Temel Kavramlar ve Sayı Kümeleri", "Bölme-Bölünebilme ve EBOB-EKOK", "Rasyonel ve Ondalık Sayılar", "Birinci Dereceden Denklemler ve Eşitsizlikler", "Mutlak Değer", "Üslü ve Köklü İfadeler", "Çarpanlara Ayırma", "Oran-Oranti", "Problemler (Sayı, Kesir, Yaş, İşçi, Karışım, Hız, Grafik)", "Kümeler ve Kartezyen Çarpım", "Mantık", "Fonksiyonlar (Giriş)", "İstatistik ve Veri", "Permütasyon, Kombinasyon, Binom", "Olasılık"],
+        "ayt": ["Fonksiyonlarda Uygulamalar", "İkinci Dereceden Denklemler ve Karmaşık Sayılar", "Polinomlar", "İkinci Dereceden Fonksiyonlar (Parabol)", "Eşitsizlik Sistemleri", "Trigonometri (AYT)", "Logaritmik Fonksiyonlar", "Aritmetik ve Geometrik Diziler", "Limit ve Süreklilik", "Türev ve Uygulamaları (Maks-Min, Teğet)", "Belirsiz ve Belirli İntegral", "Analitik Geometri", "Çemberin Analitik İncelenmesi", "Katı Cisimler (Uzay Geometri)"]
+    },
+    "Kimya": {
+        "tyt": ["Kimya Bilimi", "Atomun Yapısı ve Periyodik Sistem", "Kimyasal Türler Arası Etkileşimler", "Maddenin Halleri", "Doğa ve Kimya", "Kimyanın Temel Kanunları ve Kimyasal Hesaplamalar", "Karışımlar", "Asitler, Bazlar ve Tuzlar", "Kimya Her Yerde"],
+        "ayt": ["Modern Atom Teorisi", "Gazlar", "Sıvı Çözeltiler ve Çözünürlük", "Kimyasal Tepkimelerde Enerji", "Kimyasal Tepkimelerde Hız", "Kimyasal Tepkimelerde Denge", "Sulu Çözelti Dengeleri (Asit-Baz, KÇÇ)", "Kimya ve Elektrik (Redoks-Elektroliz)", "Karbon Kimyasına Giriş", "Organik Kimya (Alkan, Alken, Alkin, Alkol, Ester)"]
+    },
+    "Biyoloji": {
+        "tyt": ["Canlıların Ortak Özellikleri ve Kimyasal Bileşenleri", "Hücrenin Yapısı ve İşlevleri", "Canlıların Çeşitliliği ve Sınıflandırılması", "Hücre Bölünmeleri (Mitoz-Mayoz)", "Kalıtımın Genel İlkeleri", "Ekosistem Ekolojisi ve Güncel Çevre Sorunları"],
+        "ayt": ["İnsan Fizyolojisi (Sinir, Endokrin, Duyu, Destek, Sindirim, Dolaşım, Solunum, Boşaltım, Üreme Sistemleri)", "Komünite ve Popülasyon Ekolojisi", "Nükleik Asitler (DNA-RNA)", "Genetik Şifre ve Protein Sentezi", "Canlılarda Enerji Dönüşümleri (Solunum, Fotosentez, Kemosentez)", "Bitki Biyolojisi (Doku, Organ, Taşıma, Beslenme, Büyüme)", "Canlılar ve Çevre"]
+    },
+    "Türkçe": {
+        "tyt": ["Sözcükte Anlam ve Söz Öbekleri", "Cümlede Anlam (İlişkiler-Yorum)", "Paragrafta Anlatım Teknikleri ve Yapı", "Paragrafta Ana Düşünce ve Yardımcı Düşünceler", "Ses Bilgisi", "Yazım Kuralları", "Noktalama İşaretleri", "Sözcük Türleri (İsim, Sıfat, Zamir, Zarf, Edat, Bağlaç, Ünlem)", "Sözcükte Yapı ve Ekler", "Fiiller, Ek Fiil ve Fiilimsiler", "Cümlenin Ögeleri", "Cümle Türleri", "Anlatım Bozuklukları"],
+        "ayt": ["Güzel Sanatlar ve Edebiyat", "Coşku ve Heyecanı Dile Getiren Metinler (Şiir Bilgisi)", "Edebi Sanatlar (Söz Sanatları)", "Destan Dönemi Türk Edebiyatı", "İslamiyet Etkisindeki Türk Edebiyatı (Geçiş Dönemi)", "Halk Edebiyatı", "Divan Edebiyatı", "Edebi Akımlar", "Tanzimat Dönemi Edebiyatı", "Servetifünun ve Fecriati Edebiyatı", "Milli Edebiyat Dönemi", "Cumhuriyet Dönemi Türk Edebiyatı", "Batı Edebiyatı ve Dünya Edebiyatı"]
+    },
+    "Tarih": {
+        "tyt": ["Tarih Bilimine Giriş", "İnsanlığın İlk Dönemleri", "Orta Çağ’da Dünya", "İlk ve Orta Çağlarda Türk Dünyası", "İslam Medeniyetinin Doğuşu ve İlk İslam Devletleri", "İlk Türk İslam Devletleri", "Yerleşme ve Devletleşme Sürecinde Selçuklu", "Beylikten Devlete Osmanlı Siyaseti (1300-1453)", "Devletleşme Sürecinde Savaşçılar ve Askerler", "Beylikten Devlete Osmanlı Medeniyeti", "Dünya Gücü Osmanlı (1453-1595)", "Sultan ve Merkez Teşkilatı", "Klasik Çağda Osmanlı Toplum Düzeni"],
+        "ayt": ["Değişen Dünya Dengeleri Karşısında Osmanlı (1595-1774)", "Devrimler Çağında Değişen Devlet-Toplum İlişkileri", "Sermaye ve Emek", "XIX. Yüzyılda Değişen Gündelik Hayat", "En Uzun Yüzyıl (1774-1918)", "20. Yüzyıl Başlarında Osmanlı Devleti", "Birinci Dünya Savaşı ve Sonuçları", "Milli Mücadele Hazırlık Dönemi", "Milli Mücadele Cepheleri", "Atatürkçülük ve Atatürk İlkeleri", "Atatürk Dönemi Türk Dış Politikası", "İki Savaş Arasındaki Dönemde Türkiye ve Dünya", "İkinci Dünya Savaşı ve Sonrası Türkiye", "Soğuk Savaş ve Küreselleşen Dünya"]
+    },
+    "Coğrafya": {
+        "tyt": ["Doğa ve İnsan Etkileşimi", "Dünya’nın Şekli ve Hareketleri", "Coğrafi Koordinat Sistemi", "Harita Bilgisi ve Projeksiyonlar", "Atmosfer, Hava Durumu ve İklim", "Yeryüzündeki İklim Tipleri", "Türkiye’nin İklimi", "Yerin İç Yapısı ve İç Kuvvetler", "Yeryüzündeki Dış Kuvvetler", "Türkiye'nin Yerşekilleri", "Su Kaynakları (Okyanuslar, Göller, Akarsular)", "Toprak Tipleri ve Dağılışı", "Bitki Toplulukları", "Nüfusun Özellikleri, Dağılışı ve Piramitler", "Göçlerin Nedenleri ve Sonuçları", "Ekonomik Faaliyetlerin Sınıflandırılması", "Uluslararası Ulaşım Hatları", "Bölge Kavramı ve Türleri", "Doğal Afetler ve Korunma Yolları"],
+        "ayt": ["Ekosistemlerin İşleyişi, Enerji Akışı ve Madde Döngüleri", "Biyoçeşitlilik ve Dağılışını Etkileyen Faktörler", "Nüfus Politikaları ve Şehirlerin Fonksiyonları", "Türkiye’de Nüfus ve Yerleşme Stratejileri", "Üretim, Dağıtım ve Tüketim Sektörleri", "Türkiye’nin Ekonomik Coğrafyası (Tarım, Hayvancılık, Maden, Sanayi)", "Türkiye’nin Doğal Güzellikleri ve Turizmi", "Kültür Bölgeleri ve Türk Kültürü", "Küresel ve Bölgesel Örgütler (BM, NATO, AB vb.)", "Ülkelerin Gelişmişlik Düzeyleri ve Kaynak Kullanımı", "Çevre Sorunları, Atıklar ve Küresel İklim Değişimi", "Sürdürülebilir Kaynak Yönetimi"]
+    },
+    "Felsefe-Din": {
+        "tyt": ["Felsefenin Anlamı ve Konusu", "Bilgi Felsefesi (Epistemoloji)", "Varlık Felsefesi (Ontoloji)", "Ahlak Felsefesi (Aksiyoloji)", "Sanat Felsefesi (Estetik)", "Din Felsefesi", "Siyaset Felsefesi", "Bilim Felsefesi", "Kur'an'a Göre Bazı Kavramlar", "İslam ve İbadet Düzeni", "Hz. Muhammed'in Örnekliği", "İslam Medeniyeti ve Bilim", "Güncel Dini Meseleler"],
+        "ayt": ["Felsefi Okuma ve Yazma", "MÖ 6. Yüzyıl - MS 2. Yüzyıl Felsefesi", "MS 2. Yüzyıl - MS 15. Yüzyıl Felsefesi", "15. Yüzyıl - 17. Yüzyıl Felsefesi", "18. Yüzyıl - 19. Yüzyıl Felsefesi", "20. Yüzyıl Felsefesi", "Klasik Mantık (Kavram, Önerme, Çıkarım)", "Mantık ve Dil", "Sembolik Mantık (Giriş)", "Psikoloji Bilimini Tanıyalım", "Psikolojinin Temel Süreçleri", "Öğrenme, Bellek, Düşünme", "Ruh Sağlığının Temelleri", "Sosyolojiye Giriş", "Birey ve Toplum", "Toplumsal Yapı, Kurumlar ve Değişme", "İslam Düşüncesinde Tasavvufi Yorumlar", "Dünya Dinleri (Yahudilik, Hristiyanlık, Budizm, Hinduizm)"]
+    }
 };
 
 const defaultStudents = {
@@ -493,23 +518,44 @@ db.ref("students").on("value", (snapshot) => {
     if(loggedInStudentCode) { let currentStudent = students.find(x => x.id === loggedInStudentCode); if(currentStudent) showStudentDashboard(currentStudent); }
 });
 
-// YENİ: Seçilen Derse Ait Alt Konuları Onay Kutusu Listesi Olarak Yükleyen Motor
+// REVIZE: Seçilen Dersin Alt Konularını Hem TYT Hem AYT Olarak Kategori Halinde Basan Fonksiyon
 function loadSubjectSubTopics(subjectName) {
     const container = document.getElementById('taskTopicsCheckboxContainer');
     if (!container) return;
     container.innerHTML = '';
     
-    let topics = YKS_TOPICS_DATABASE[subjectName] || ["Genel Tekrar"];
-    topics.forEach((topic, index) => {
-        container.innerHTML += `
-            <label class="topic-check-item">
-                <input type="checkbox" name="task_topic_checkboxes" value="${topic}">
-                <span>${topic}</span>
-            </label>`;
-    });
+    let subjectData = YKS_TOPICS_DATABASE[subjectName];
+    if (!subjectData) {
+        container.innerHTML = '<div style="font-size:12px; color:gray;">Bu ders için konu listesi bulunamadı.</div>';
+        return;
+    }
+    
+    // TYT Kategorisini Oluştur ve Bas
+    if (subjectData.tyt && subjectData.tyt.length > 0) {
+        container.innerHTML += `<div class="category-title">📘 TYT KONULARI (${subjectName})</div>`;
+        subjectData.tyt.forEach(topic => {
+            container.innerHTML += `
+                <label class="topic-check-item">
+                    <input type="checkbox" name="task_topic_checkboxes" value="TYT - ${topic}">
+                    <span>${topic}</span>
+                </label>`;
+        });
+    }
+    
+    // AYT Kategorisini Oluştur ve Bas
+    if (subjectData.ayt && subjectData.ayt.length > 0) {
+        container.innerHTML += `<div class="category-title">📙 AYT KONULARI (${subjectName})</div>`;
+        subjectData.ayt.forEach(topic => {
+            container.innerHTML += `
+                <label class="topic-check-item">
+                    <input type="checkbox" name="task_topic_checkboxes" value="AYT - ${topic}">
+                    <span>${topic}</span>
+                </label>`;
+        });
+    }
 }
 
-// İlk açılışta Fizik konularını yükle
+// İlk sistem açılışında varsayılan olarak Fizik konularını ekrana yükle
 window.addEventListener('DOMContentLoaded', () => {
     setTimeout(() => { loadSubjectSubTopics("Fizik"); }, 1000);
 });
@@ -775,7 +821,7 @@ async function processPDFv2() {
 function showStudentDashboard(s) {
     document.getElementById('welcomeText').innerText = `Hoş geldin, ${s.name}`;
     document.getElementById('studentSubInfo').innerText = `Sınıf: ${s.class} | Detaylı Ödev ve Net Analiz Sistemi`;
-    const quickSwitch = document.getElementById('quickStudentSwitchSelect'); if(quickSwitch) { quickSwitch.value = s.id; }
+    const quickSwitch = document.getElementById('quickSwitchStudentSelect'); if(quickSwitch) { quickSwitch.value = s.id; }
     const motArea = document.getElementById('studentMotivationArea');
     if(s.approvedMotivation) { motArea.innerHTML = `<div class="motivation-box">🚀 <b>Hocandan Mesaj Var:</b> ${s.approvedMotivation}</div>`; } else { motArea.innerHTML = ''; }
 
@@ -829,7 +875,6 @@ function suggestTargetQuestions() {
     document.getElementById('taskTargetQuestions').value = baseQuestions;
 }
 
-// REVIZE: Çoklu Konu Seçimli Ödev Kaydetme Fonksiyonu
 function saveSubjectTask() {
     const id = document.getElementById('taskStudentSelect').value; 
     const subject = document.getElementById('taskSubjectSelect').value; 
@@ -838,24 +883,21 @@ function saveSubjectTask() {
     const targetNet = parseFloat(document.getElementById('taskTargetNet').value) || 5;
     if(!id) return alert('Lütfen bir öğrenci seçin.');
 
-    // Seçilen tüm alt konuları yakala ve birleştir
     let selectedTopics = [];
     document.querySelectorAll('input[name="task_topic_checkboxes"]:checked').forEach(cb => {
         selectedTopics.push(cb.value);
     });
 
     if(selectedTopics.length === 0) return alert('Lütfen ödev için en az bir alt konu seçin.');
-    let topicStr = selectedTopics.join(", "); // Konuları virgülle ayırarak kaydet
+    let topicStr = selectedTopics.join(", ");
 
     let taskKey = subject.toLowerCase().replace(/[^a-z]/g, ""); 
     db.ref("students/" + id + "/subjectTasks/" + taskKey).set({ 
         subject, target, topic: topicStr, done: 0, currentNet, targetNet 
     });
-    
-    alert('Ödev konularıyla birlikte başarıyla gönderildi.');
+    alert('Ödev (TYT/AYT) konularıyla birlikte başarıyla gönderildi.');
 }
 
-// REVIZE: Çoklu Konu Seçimli Toplu Ödev Gönderimi
 function saveBulkSubjectTask() {
     const subject = document.getElementById('taskSubjectSelect').value; 
     const target = parseInt(document.getElementById('taskTargetQuestions').value) || 100; 
@@ -879,7 +921,7 @@ function saveBulkSubjectTask() {
             subject, target, topic: topicStr, done: 0, currentNet, targetNet 
         }); 
     });
-    alert('Çoklu konu içerikli toplu ödev tüm sınıfa iletildi!');
+    alert('Toplu ödev (TYT/AYT) konularıyla birlikte sınıfa iletildi!');
 }
 
 function sendCustomMessage() {
@@ -913,7 +955,7 @@ function updateSelectMenus() {
     if(!loginSel) return; let currentLoginVal = loginSel.value; loginSel.innerHTML = '<option value="">-- İsminizi Seçin --</option>';
     students.forEach(s => { loginSel.innerHTML += `<option value="${s.id}">${s.name} (${s.class})</option>`; }); loginSel.value = currentLoginVal;
     if(qSel) { let currentQ = qSel.value; qSel.innerHTML = '<option value="">-- Öğrenci Seçin --</option>'; students.forEach(s => { qSel.innerHTML += `<option value="${s.id}">${s.name} (${s.class})</option>`; }); qSel.value = currentQ; }
-    if(archSel) { let currentArch = archSel.value; archSel.innerHTML = '<option value="">-- Öğrenci Seçin --</option>'; students.forEach(s => { archSel.innerHTML += `<option value="${s.id}">${s.name} (${s.class})</option>`; }); archSel.value = currentArch; }
+    if(archSel) { let currentArch = archSel.value; archSel.innerHTML = '<option value="">-- Öğrenci Seçin --</option>'; students.forEach(s => { qSel.innerHTML += `<option value="${s.id}">${s.name} (${s.class})</option>`; }); archSel.value = currentArch; }
     if(tSel && eSel && cSel) { let currentT = tSel.value; let currentE = eSel.value; let currentC = cSel.value; tSel.innerHTML = ''; eSel.innerHTML = ''; cSel.innerHTML = ''; students.forEach(s => { let op = `<option value="${s.id}">${s.name} (${s.class})</option>`; tSel.innerHTML += op; eSel.innerHTML += op; cSel.innerHTML += op; }); tSel.value = currentT; eSel.value = currentE; cSel.value = currentC; }
 }
 
