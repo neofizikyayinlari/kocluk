@@ -254,33 +254,50 @@
 
             <div class="card" style="border-top: 4px solid #3182ce;">
                 <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; margin-bottom: 15px;">
-                    <h3>🔍 Öğrenci Sınav Arşivi & Detay Gözlem Odası</h3>
+                    <h3>🛠️ Sınav Yönetimi, Canlı Düzenleme ve Toplu Silme Odası</h3>
                     <div style="display: flex; gap: 15px; flex-wrap: wrap;">
                         <div>
                             <label style="font-size:12px; font-weight:bold; color:#4a5568; display:block;">1. Öğrenci Seçin:</label>
-                            <select id="teacherArchiveStudentSelect" onchange="loadStudentExamsToTeacherArchive(this.value)" style="width: 220px; padding: 5px; font-size: 13px;"></select>
+                            <select id="teacherArchiveStudentSelect" onchange="loadStudentExamsToTeacherArchive(this.value)" style="width: 200px; padding: 5px; font-size: 13px;"></select>
                         </div>
                         <div>
                             <label style="font-size:12px; font-weight:bold; color:#4a5568; display:block;">2. Sınav Seçin:</label>
-                            <select id="teacherArchiveExamSelect" onchange="switchTeacherArchiveExamView(this.value)" style="width: 200px; padding: 5px; font-size: 13px;"></select>
+                            <select id="teacherArchiveExamSelect" onchange="switchTeacherArchiveExamView(this.value)" style="width: 180px; padding: 5px; font-size: 13px;"></select>
                         </div>
                     </div>
                 </div>
-                <div id="teacherArchiveTableArea" style="display:none;">
+                
+                <div id="teacherArchiveTableArea" style="display:none; background: #fff; padding: 15px; border-radius: 8px; border: 1px solid #cbd5e0;">
+                    <div style="display:flex; justify-content: space-between; align-items:center; margin-bottom: 15px; background: #ebf8ff; padding: 10px; border-radius:6px;">
+                        <span style="font-size:13px; font-weight:bold; color:#2b6cb0;">⚡ Seçili Sınav Üzerinde Canlı Düzenleme / Silme İşlemleri</span>
+                        <div style="display:flex; gap:8px;">
+                            <button class="btn btn-danger" style="padding: 5px 10px; font-size:12px;" onclick="deleteSingleExam()">🗑️ Bu Sınavı Sil</button>
+                            <button class="btn btn-danger" style="padding: 5px 10px; font-size:12px; background:#c53030;" onclick="clearAllExamsOfStudent()">⚠️ Tüm Geçmişini Sıfırla</button>
+                        </div>
+                    </div>
+                    
                     <table class="detail-table">
                         <thead>
                             <tr>
                                 <th style="text-align: left;">Ders Adı</th>
                                 <th>Soru Sayısı</th>
-                                <th>Doğru</th>
-                                <th>Yanlış</th>
-                                <th>Net Durumu</th>
+                                <th>Mevcut Net Değeri (Canlı Düzenle)</th>
                             </tr>
                         </thead>
                         <tbody id="teacherArchiveTableBody"></tbody>
                     </table>
+                    <button class="btn btn-success" style="width:100%; margin-top:15px;" onclick="updateExamNetsLive()">💾 Düzenlemeleri ve Değişiklikleri Buluta Kaydet</button>
                 </div>
-                <div id="teacherArchiveStatus" style="font-size:13px; color:#7f8c8d; text-align:center; padding:10px;">Lütfen incelemek istediğiniz öğrenciyi seçin.</div>
+                
+                <div style="margin-top:20px; padding-top:15px; border-top: 2px dashed #cbd5e0; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+                    <span style="font-size:13px; font-weight:bold; color:var(--accent-color);">🚨 Genel Toplu Temizlik İşlemi (Tüm Öğrenciler):</span>
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <input type="text" id="globalExamNameInput" placeholder="Örn: Özdebir-3" style="width:180px; padding:6px; font-size:12px;">
+                        <button class="btn btn-danger" style="padding:6px 12px; font-size:12px;" onclick="deleteExamFromAllStudentsGlobal()">🔥 Bu Sınavı TÜM ÖĞRENCİLERDEN Sil</button>
+                    </div>
+                </div>
+
+                <div id="teacherArchiveStatus" style="font-size:13px; color:#7f8c8d; text-align:center; padding:10px;">Lütfen incelemek ya da düzenlemek istediğiniz öğrenciyi seçin.</div>
             </div>
 
             <div class="card">
@@ -313,7 +330,9 @@ let students = [];
 let currentChart = null;
 let loggedInStudentCode = null;
 let activeStudentExamsData = {}; 
-let teacherArchiveSelectedStudentExams = {}; // Öğretmenin seçtiği öğrencinin denemelerini tutan nesne
+let teacherArchiveSelectedStudentExams = {}; 
+let currentSelectedStudentIdForArchive = "";
+let currentSelectedExamKeyForArchive = "";
 
 const defaultStudents = {
     "6493": { id: "6493", name: "AHMET EREN SAĞLAM", class: "12-D", exams: { "init": { date: "Başlangıç", type: "TYT", total: 90.00, tur: 25, mat: 30, sos: 15, fen: 20, tar: 4, cog: 4, fel: 3, din: 4, fiz: 6, kim: 7, biy: 7 } } },
@@ -336,6 +355,7 @@ db.ref("students").on("value", (snapshot) => {
     if (data) { students = Object.values(data); } else { db.ref("students").set(defaultStudents); students = Object.values(defaultStudents); }
     updateSelectMenus(); renderStudentTable(); renderTeacherApprovals();
     if(loggedInStudentCode) { let currentStudent = students.find(x => x.id === loggedInStudentCode); if(currentStudent) showStudentDashboard(currentStudent); }
+    if(currentSelectedStudentIdForArchive) { loadStudentExamsToTeacherArchive(currentSelectedStudentIdForArchive); }
 });
 
 function switchTab(tabId) { document.querySelectorAll('.panel').forEach(p => p.classList.remove('active')); document.getElementById(tabId).classList.add('active'); }
@@ -369,95 +389,149 @@ function quickSwitchStudentSecure(targetStudentId) {
     }
 }
 
-// YENİ: Öğretmen Seçtiği Öğrencinin Sınav Listesini Filtreye Yükler
+// YENİ: Öğretmen Arşiv Düzenleme Alanını Doldurma Fonksiyonu
 function loadStudentExamsToTeacherArchive(studentId) {
+    currentSelectedStudentIdForArchive = studentId;
     const examSelect = document.getElementById('teacherArchiveExamSelect');
     const tableArea = document.getElementById('teacherArchiveTableArea');
     const statusDiv = document.getElementById('teacherArchiveStatus');
     
     if(!studentId) {
-        tableArea.style.display = 'none';
-        statusDiv.style.display = 'block';
-        statusDiv.innerText = "Lütfen incelemek istediğiniz öğrenciyi seçin.";
+        tableArea.style.display = 'none'; statusDiv.style.display = 'block';
+        statusDiv.innerText = "Lütfen incelemek ya da düzenlemek istediğiniz öğrenciyi seçin.";
         return;
     }
     
     let student = students.find(x => x.id === studentId);
     if(!student || !student.exams) {
-        examSelect.innerHTML = '';
-        tableArea.style.display = 'none';
-        statusDiv.style.display = 'block';
+        examSelect.innerHTML = ''; tableArea.style.display = 'none'; statusDiv.style.display = 'block';
         statusDiv.innerText = "Bu öğrenciye ait herhangi bir sınav kaydı bulunamadı.";
         return;
     }
     
     teacherArchiveSelectedStudentExams = student.exams;
     let keys = Object.keys(student.exams);
+    let cachedExamKey = currentSelectedExamKeyForArchive;
     
     examSelect.innerHTML = '';
     keys.forEach(key => {
         examSelect.innerHTML += `<option value="${key}">${student.exams[key].date}</option>`;
     });
     
-    statusDiv.style.display = 'none';
-    tableArea.style.display = 'block';
+    statusDiv.style.display = 'none'; tableArea.style.display = 'block';
     
-    // Otomatik son sınavı dök
-    let lastKey = keys[keys.length - 1];
-    examSelect.value = lastKey;
-    renderTeacherArchiveTableRowDetails(student.exams[lastKey]);
+    if(cachedExamKey && keys.includes(cachedExamKey)) {
+        examSelect.value = cachedExamKey;
+        renderTeacherArchiveTableRowDetails(student.exams[cachedExamKey]);
+    } else {
+        let lastKey = keys[keys.length - 1];
+        examSelect.value = lastKey;
+        currentSelectedExamKeyForArchive = lastKey;
+        renderTeacherArchiveTableRowDetails(student.exams[lastKey]);
+    }
 }
 
-// YENİ: Öğretmen Sınav Değiştirdiğinde Tetiklenir
 function switchTeacherArchiveExamView(examKey) {
     if(!examKey || !teacherArchiveSelectedStudentExams[examKey]) return;
+    currentSelectedExamKeyForArchive = examKey;
     renderTeacherArchiveTableRowDetails(teacherArchiveSelectedStudentExams[examKey]);
 }
 
-// YENİ: Öğretmen Paneli İçin Doğru/Yanlış Tablosunu Basar
+// YENİ: İnput Alanlarıyla Canlı Düzenleme Tablosunu Oluşturma
 function renderTeacherArchiveTableRowDetails(exam) {
     const tbody = document.getElementById('teacherArchiveTableBody');
     tbody.innerHTML = '';
     
     const subjects = [
-        { name: "Türkçe", max: 40, net: exam.tur || 0 },
-        { name: "Matematik", max: 40, net: exam.mat || 0 },
-        { name: "Tarih", max: 5, net: exam.tar || 0 },
-        { name: "Coğrafya", max: 5, net: exam.cog || 0 },
-        { name: "Felsefe", max: 5, net: exam.fel || 0 },
-        { name: "Din Kültürü", max: 5, net: exam.din || 0 },
-        { name: "Fizik", max: 7, net: exam.fiz || 0 },
-        { name: "Kimya", max: 7, net: exam.kim || 0 },
-        { name: "Biyoloji", max: 7, net: exam.biy || 0 }
+        { id: "edit_tur", name: "Türkçe", max: 40, net: exam.tur || 0 },
+        { id: "edit_mat", name: "Matematik", max: 40, net: exam.mat || 0 },
+        { id: "edit_tar", name: "Tarih", max: 5, net: exam.tar || 0 },
+        { id: "edit_cog", name: "Coğrafya", max: 5, net: exam.cog || 0 },
+        { id: "edit_fel", name: "Felsefe", max: 5, net: exam.fel || 0 },
+        { id: "edit_din", name: "Din Kültürü", max: 5, net: exam.din || 0 },
+        { id: "edit_fiz", name: "Fizik", max: 7, net: exam.fiz || 0 },
+        { id: "edit_kim", name: "Kimya", max: 7, net: exam.kim || 0 },
+        { id: "edit_biy", name: "Biyoloji", max: 7, net: exam.biy || 0 }
     ];
     
-    let grandTotalQuestions = 0; let grandTotalD = 0; let grandTotalY = 0; let grandTotalNet = 0;
-
     subjects.forEach(sub => {
-        let netVal = parseFloat(sub.net); let Y = 0; let D = Math.ceil(netVal);
-        if (netVal % 1 !== 0) { let diff = D - netVal; Y = Math.round(diff / 0.25); D = Math.floor(netVal) + Y; }
-        if((D + Y) > sub.max) { D = Math.min(Math.round(netVal), sub.max); Y = 0; }
-        
-        grandTotalQuestions += sub.max; grandTotalD += D; grandTotalY += Y; grandTotalNet += netVal;
-
         tbody.innerHTML += `
             <tr>
                 <td style="text-align: left; font-weight:600;">${sub.name}</td>
                 <td>${sub.max}</td>
-                <td class="text-success-bold">${D}</td>
-                <td class="text-danger-bold">${Y}</td>
-                <td style="font-weight:bold; background:#f7fafc;">${netVal}</td>
+                <td><input type="number" step="0.25" id="${sub.id}" value="${sub.net}" style="width:120px; text-align:center; padding:5px;"></td>
             </tr>`;
     });
+}
 
-    tbody.innerHTML += `
-        <tr style="background:#edf2f7; font-weight:bold; border-top: 2px solid var(--primary-color);">
-            <td style="text-align: left;">GENEL TOPLAM</td>
-            <td>${grandTotalQuestions}</td>
-            <td class="text-success-bold">${grandTotalD}</td>
-            <td class="text-danger-bold">${grandTotalY}</td>
-            <td style="color:#2b6cb0; font-size:16px;">${grandTotalNet.toFixed(2)} Net</td>
-        </tr>`;
+// YENİ: Düzenlenen Netleri Veritabanına Kaydetme Fonksiyonu
+function updateExamNetsLive() {
+    if(!currentSelectedStudentIdForArchive || !currentSelectedExamKeyForArchive) return;
+    
+    let tur = parseFloat(document.getElementById('edit_tur').value) || 0;
+    let mat = parseFloat(document.getElementById('edit_mat').value) || 0;
+    let tar = parseFloat(document.getElementById('edit_tar').value) || 0;
+    let cog = parseFloat(document.getElementById('edit_cog').value) || 0;
+    let fel = parseFloat(document.getElementById('edit_fel').value) || 0;
+    let din = parseFloat(document.getElementById('edit_din').value) || 0;
+    let fiz = parseFloat(document.getElementById('edit_fiz').value) || 0;
+    let kim = parseFloat(document.getElementById('edit_kim').value) || 0;
+    let biy = parseFloat(document.getElementById('edit_biy').value) || 0;
+    
+    let sos = tar + cog + fel + din;
+    let fen = fiz + kim + biy;
+    let total = (tur + mat + sos + fen).toFixed(2);
+    
+    db.ref("students/" + currentSelectedStudentIdForArchive + "/exams/" + currentSelectedExamKeyForArchive).update({
+        tur, mat, tar, cog, fel, din, fiz, kim, biy, sos, fen, total
+    }, (err) => {
+        if(!err) alert("Sınav netleri başarıyla güncellendi ve buluta senkronize edildi!");
+    });
+}
+
+// YENİ: Tek Bir Sınavı Öğrenciden Silme
+function deleteSingleExam() {
+    if(!currentSelectedStudentIdForArchive || !currentSelectedExamKeyForArchive) return;
+    if(confirm("Bu sınav kaydını öğrenciden tamamen silmek istediğinize emin misiniz?")) {
+        db.ref("students/" + currentSelectedStudentIdForArchive + "/exams/" + currentSelectedExamKeyForArchive).remove(() => {
+            alert("Sınav kaydı silindi.");
+            currentSelectedExamKeyForArchive = "";
+            loadStudentExamsToTeacherArchive(currentSelectedStudentIdForArchive);
+        });
+    }
+}
+
+// YENİ: Bir Öğrencinin Tüm Sınav Geçmişini Sıfırlama
+function clearAllExamsOfStudent() {
+    if(!currentSelectedStudentIdForArchive) return;
+    if(confirm("DİKKAT! Bu öğrencinin girilmiş olan TÜM deneme geçmişi silinecektir. Emin misiniz?")) {
+        db.ref("students/" + currentSelectedStudentIdForArchive + "/exams").remove(() => {
+            alert("Öğrencinin tüm sınav geçmişi sıfırlandı.");
+            currentSelectedExamKeyForArchive = "";
+            loadStudentExamsToTeacherArchive(currentSelectedStudentIdForArchive);
+        });
+    }
+}
+
+// YENİ: Belirli Bir Sınavı Tüm Öğrencilerden Küresel Olarak Silme (Toplu Temizlik)
+function deleteExamFromAllStudentsGlobal() {
+    const examName = document.getElementById('globalExamNameInput').value.trim().toUpperCase();
+    if(!examName) return alert("Lütfen silmek istediğiniz sınavın tam adını yazın (Örn: Özdebir-3)");
+    
+    if(confirm(`🚨 DİKKAT! "${examName}" isimli sınav buluttaki TÜM öğrencilerden tamamen silinecektir. Bu işlem geri alınamaz. Emin misiniz?`)) {
+        students.forEach(student => {
+            if(student.exams) {
+                Object.keys(student.exams).forEach(examKey => {
+                    if(student.exams[examKey].date.toUpperCase() === examName) {
+                        db.ref("students/" + student.id + "/exams/" + examKey).remove();
+                    }
+                });
+            }
+        });
+        alert(`"${examName}" isimli sınav tarandı ve eşleşen tüm kayıtlardan temizlendi.`);
+        document.getElementById('globalExamNameInput').value = "";
+        currentSelectedExamKeyForArchive = "";
+    }
 }
 
 async function processPDFv2() {
@@ -523,10 +597,7 @@ function showStudentDashboard(s) {
                 </div>`;
         });
     } else { listArea.innerHTML = 'Şu an aktif bir ödeviniz bulunmuyor.'; }
-    
-    activeStudentExamsData = s.exams ? s.exams : {};
-    buildStudentExamSelectMenu();
-    renderStudentChart(s);
+    activeStudentExamsData = s.exams ? s.exams : {}; buildStudentExamSelectMenu(); renderStudentChart(s);
 }
 
 function buildStudentExamSelectMenu() {
@@ -543,7 +614,7 @@ function calculateAndRenderExamRowDetails(exam) {
     const tbody = document.getElementById('studentDetailTableBody'); const title = document.getElementById('detailTableTitle');
     title.innerText = `📊 Sınav Sonuç Detaylarım (${exam.date})`; tbody.innerHTML = '';
     const subjects = [
-        { name: "Türkçe", max: 40, net: exam.tur || 0 }, { name: "Matematik", max: 40, net: exam.mat || 0 }, { name: "Tarih", max: 5, net: exam.tar || 0 }, { name: "Coğrafya", max: 5, net: exam.cog || 0 }, { name: "Felsefe", max: 5, net: exam.fel || 0 }, { name: "Din Kültürü", max: 5, net: exam.din || 0 }, { name: "Fizik", max: 7, net: exam.fiz || 0 }, { name: "Kimya", max: 7, net: exam.kim || 0 }, { name: "Biyoloji", max: 7, net: exam.biy || 0 }
+        { name: "Türkçe", max: 40, net: exam.tur || 0 }, { name: "Matematik", max: 40, net: exam.mat || 0 }, { name: "Tarih", max: 5, net: exam.tar || 0 }, { name: "Coğrafya", max: 5, net: exam.cog || 0 }, { name: "Felsefe", max: 5, net: exam.fel || 0 }, { name: "Din Kültürü", max: 5, net: exam.din || 0 }, { name: "Fizik", max: 7, net: exam.fiz || 0 }, { name: "Kimya", max: 7, net: exam.kim || 0 }, { name: "Biyoloji", max: 6, net: exam.biy || 0 }
     ];
     let grandTotalQuestions = 0; let grandTotalD = 0; let grandTotalY = 0; let grandTotalNet = 0;
     subjects.forEach(sub => {
@@ -614,32 +685,12 @@ function approveMessage(studentId, approvalKey) {
 function rejectMessage(approvalKey) { if(confirm('Mesaj silinsin mi?')) { db.ref("approvals/" + approvalKey).remove(); } }
 
 function updateSelectMenus() {
-    const loginSel = document.getElementById('loginStudentSelect'); 
-    const tSel = document.getElementById('taskStudentSelect'); 
-    const eSel = document.getElementById('examStudentSelect'); 
-    const cSel = document.getElementById('customMsgStudentSelect'); 
-    const qSel = document.getElementById('quickStudentSwitchSelect');
-    const archSel = document.getElementById('teacherArchiveStudentSelect'); // Yeni Öğretmen Arşiv Menüsü
-    
-    if(!loginSel) return; 
-    let currentLoginVal = loginSel.value; loginSel.innerHTML = '<option value="">-- İsminizi Seçin --</option>';
+    const loginSel = document.getElementById('loginStudentSelect'); const tSel = document.getElementById('taskStudentSelect'); const eSel = document.getElementById('examStudentSelect'); const cSel = document.getElementById('customMsgStudentSelect'); const qSel = document.getElementById('quickStudentSwitchSelect'); const archSel = document.getElementById('teacherArchiveStudentSelect');
+    if(!loginSel) return; let currentLoginVal = loginSel.value; loginSel.innerHTML = '<option value="">-- İsminizi Seçin --</option>';
     students.forEach(s => { loginSel.innerHTML += `<option value="${s.id}">${s.name} (${s.class})</option>`; }); loginSel.value = currentLoginVal;
-    
     if(qSel) { let currentQ = qSel.value; qSel.innerHTML = '<option value="">-- Öğrenci Seçin --</option>'; students.forEach(s => { qSel.innerHTML += `<option value="${s.id}">${s.name} (${s.class})</option>`; }); qSel.value = currentQ; }
-    
-    if(archSel) {
-        let currentArch = archSel.value;
-        archSel.innerHTML = '<option value="">-- Öğrenci Seçin --</option>';
-        students.forEach(s => { archSel.innerHTML += `<option value="${s.id}">${s.name} (${s.class})</option>`; });
-        archSel.value = currentArch;
-    }
-
-    if(tSel && eSel && cSel) { 
-        let currentT = tSel.value; let currentE = eSel.value; let currentC = cSel.value; 
-        tSel.innerHTML = ''; eSel.innerHTML = ''; cSel.innerHTML = ''; 
-        students.forEach(s => { let op = `<option value="${s.id}">${s.name} (${s.class})</option>`; tSel.innerHTML += op; eSel.innerHTML += op; cSel.innerHTML += op; }); 
-        tSel.value = currentT; eSel.value = currentE; cSel.value = currentC; 
-    }
+    if(archSel) { let currentArch = archSel.value; archSel.innerHTML = '<option value="">-- Öğrenci Seçin --</option>'; students.forEach(s => { archSel.innerHTML += `<option value="${s.id}">${s.name} (${s.class})</option>`; }); archSel.value = currentArch; }
+    if(tSel && eSel && cSel) { let currentT = tSel.value; let currentE = eSel.value; let currentC = cSel.value; tSel.innerHTML = ''; eSel.innerHTML = ''; cSel.innerHTML = ''; students.forEach(s => { let op = `<option value="${s.id}">${s.name} (${s.class})</option>`; tSel.innerHTML += op; eSel.innerHTML += op; cSel.innerHTML += op; }); tSel.value = currentT; eSel.value = currentE; cSel.value = currentC; }
 }
 
 function renderStudentTable() {
