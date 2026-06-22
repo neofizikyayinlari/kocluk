@@ -467,6 +467,48 @@
                         <div class="progress-container" style="height: 24px;"><div id="rep_progress_bar" class="progress-bar" style="width: 0%;"></div><div id="rep_progress_text" class="progress-text" style="line-height:24px; font-size:13px;">%0</div></div>
                     </div>
 
+                    <!-- 🤖 AKILLI YAPAY ZEKA ASİSTANI BÖLÜMÜ (YENİ EKLENDİ) -->
+                    <div class="card" style="margin-top: 20px; border-left: 5px solid #6c5ce7; background: #f3f0ff;">
+                        <h3 style="color: #6c5ce7; display: flex; align-items: center; gap: 8px;">🤖 NEOFİZİK Akıllı Yapay Zeka Koçluk Asistanı (Gemini)</h3>
+                        <p style="font-size:12px; color:#7f8c8d; margin-bottom:15px;">Seçtiğiniz öğrencinin tüm sınav geçmişini ve ödev performansını Gemini yapay zekasına analiz ettirerek ders programı veya nokta atışı soru çözme tavsiyeleri oluşturabilirsiniz.</p>
+                        
+                        <div class="grid-2">
+                            <div class="form-group">
+                                <label>🔑 Gemini API Key (Tarayıcıda Güvenle Saklanır)</label>
+                                <input type="password" id="geminiApiKeyInput" placeholder="AI Studio'dan aldığınız AIzaSy... ile başlayan anahtar" onchange="saveGeminiKeyToLocal(this.value)">
+                            </div>
+                            <div class="form-group">
+                                <label>⚙️ Yapay Zeka İşlem Modu</label>
+                                <select id="aiModeSelect">
+                                    <option value="recommendation">Sınav Analizine Göre Nokta Atışı Konu & Soru Çözüm Önerileri</option>
+                                    <option value="weekly_program">Haftalık Kişiselleştirilmiş Ders Çalışma Programı</option>
+                                    <option value="monthly_program">Aylık Stratejik Yol Haritası ve Çalışma Programı</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <button class="btn" style="background:#6c5ce7; width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;" onclick="generateAIAnalysis()">
+                            ⚡ Öğrenci Verilerini Analiz Et ve AI Raporu Üret
+                        </button>
+                        
+                        <!-- AI Sonuç Alanı -->
+                        <div id="aiOutputArea" style="margin-top: 15px; display: none;">
+                            <h4 style="margin-bottom: 8px; color: #4a5568;">📋 Üretilen Yapay Zeka Raporu / Programı</h4>
+                            <p style="font-size:11px; color:#718096; margin-bottom:5px;">Aşağıdaki metni göndermeden önce düzenleyebilir ve değiştirebilirsiniz:</p>
+                            <textarea id="aiTextarea" style="height: 250px; font-family: monospace; font-size:13px; line-height: 1.5; background: white; resize: vertical;"></textarea>
+                            
+                            <div style="display: flex; gap: 10px; margin-top: 10px;">
+                                <button class="btn btn-success" style="flex: 1;" onclick="sendAIReportToStudent()">📢 Raporu Öğrenciye Gönder (Motivasyon Kutusu)</button>
+                                <button class="btn" style="background: #718096;" onclick="copyAIText()">📋 Metni Kopyala</button>
+                            </div>
+                        </div>
+
+                        <!-- Yükleniyor Göstergesi -->
+                        <div id="aiLoadingSpinner" style="text-align: center; display: none; margin-top: 15px; font-weight: bold; color: #6c5ce7;">
+                            ⏳ Gemini verileri analiz ediyor ve kişiselleştirilmiş koçluk raporu hazırlıyor, lütfen bekleyin...
+                        </div>
+                    </div>
+
                     <div style="margin-top:20px;">
                         <h4 style="margin-bottom:8px; font-size:14px; color:#4a5568;">📋 Ders & Konu Bazlı Detaylı Ödev Analizi</h4>
                         <table class="detail-table">
@@ -554,7 +596,7 @@ const YKS_TOPICS_DATABASE = {
         "ayt": ["İnsan Fizyolojisi ve Sistemler", "Komünite ve Popülasyon Ekolojisi", "Nükleik Asitler", "Protein Sentezi", "Canlılarda Enerji Dönüşümleri", "Bitki Biyolojisi", "Canlılar ve Çevre"]
     },
     "Türkçe": { "tyt": ["Sözcük ve Cümle Anlamı", "Paragraf", "Ses Bilgisi", "Yazım-Noktalama", "Sözcük Türleri", "Cümlenin Ögeleri"], "ayt": ["Şiir Bilgisi", "Edebi Sanatlar", "Divan Edebiyatı", "Tanzimat Edebiyatı", "Milli Edebiyat", "Cumhuriyet Dönemi Edebiyatı"] },
-    "Tarih": { "tyt": ["Tarih ve Zaman", "İlk ve Orta Çağlarda Türk Dünyası", "Osmanlı Siyaseti"], "ayt": ["20. Yüzyıl Başlarında Osmanlı", "Birinci Dünya Savaşı", "Milli Mücadele Cepheleri", "Atatürk İlkeleri"] },
+    "Tarih": { "tyt": ["Tarih ve Zaman", "İlk ve Orta Çağlarda Türk Dünyası", "Osmanlı Siyaseti"], "ayt": ["20. Yüzyıl Başlarında Osmanlı", "Birinci Dünya Savaşı", "Milli Mücede Cepheleri", "Atatürk İlkeleri"] },
     "Coğrafya": { "tyt": ["Doğa ve İnsan", "Harita Bilgisi", "İklim Bilgisi", "İç ve Dış Kuvvetler"], "ayt": ["Ekosistemlerin İşleyişi", "Türkiye'nin Ekonomik Coğrafyası", "Küresel Örgütler"] },
     "Felsefe-Din": { "tyt": ["Felsefeyi Tanıma", "Bilgi ve Varlık Felsefesi", "Ahlak Felsefesi"], "ayt": ["Klasik Mantık", "Psikoloji Bilimi", "Sosyolojiye Giriş", "Dünya Dinleri"] }
 };
@@ -578,6 +620,12 @@ function loadSubjectSubTopics(subjectName) {
 }
 
 window.addEventListener('DOMContentLoaded', () => { 
+    // Gemini API Key yükleme
+    const savedGeminiKey = localStorage.getItem("neofizik_gemini_key");
+    if(savedGeminiKey && document.getElementById('geminiApiKeyInput')) {
+        document.getElementById('geminiApiKeyInput').value = savedGeminiKey;
+    }
+
     setTimeout(() => { 
         if(document.getElementById('taskSubjectSelect')) loadSubjectSubTopics("Fizik"); 
         
@@ -592,12 +640,15 @@ window.addEventListener('DOMContentLoaded', () => {
     }, 1200); 
 });
 
+function saveGeminiKeyToLocal(key) {
+    localStorage.setItem("neofizik_gemini_key", key.trim());
+}
+
 function switchTab(tabId) { document.querySelectorAll('.panel').forEach(p => p.classList.remove('active')); document.getElementById(tabId).classList.add('active'); }
 
 function loginAsTeacher() {
     const enteredPass = document.getElementById('teacherPass').value;
     
-    // Güvenlik kurallarının engelleme ihtimaline karşı 'students/' altında korunaklı okuma deniyoruz.
     db.ref("students/teacherConfig/password").once("value")
     .then((snapshot) => {
         let dbPass = snapshot.val();
@@ -613,7 +664,6 @@ function loginAsTeacher() {
         }
     })
     .catch((error) => {
-        // Firebase kısıtı durumunda tarayıcı hafızasını veya varsayılan 1234 şifresini yedek olarak çalıştırır.
         console.warn("Bulut veritabanı şifresi okunamadı. Yedek şifre doğrulaması yapılıyor.", error);
         let localPass = localStorage.getItem("teacher_backup_password") || "1234";
         if (enteredPass === localPass) {
@@ -818,6 +868,10 @@ function renderTeacherArchiveTableRowDetails(exam) {
 
 function generateComprehensiveStudentReport(studentId) {
     const dashboard = document.getElementById('reportDashboardArea'); const emptyState = document.getElementById('reportEmptyStatus');
+    // AI Sonuç Alanlarını Temizle
+    const aiOutput = document.getElementById('aiOutputArea');
+    if(aiOutput) aiOutput.style.display = 'none';
+
     if(!studentId) { dashboard.style.display = 'none'; emptyState.style.display = 'block'; return; }
     let s = students.find(x => x.id === studentId); if(!s) return;
     emptyState.style.display = 'none'; dashboard.style.display = 'block';
@@ -867,6 +921,151 @@ function generateComprehensiveStudentReport(studentId) {
         exams.forEach(ex => { examTableBody.innerHTML += `<tr><td><b>${ex.date}</b></td><td><span class="student-badge">${ex.type || 'TYT'}</span></td><td class="text-success-bold">${ex.total_d || 0}</td><td class="text-danger-bold">${ex.total_y || 0}</td><td style="font-weight:bold; background:#f7fafc;">${ex.total || "0.00"} Net</td></tr>`; });
         document.getElementById('rep_last_exam_net').innerText = exams[exams.length - 1].total || "0.00";
     }
+}
+
+// 🤖 YAPAY ZEKA ASİSTANI FONKSİYONLARI (YENİ EKLENDİ)
+async function generateAIAnalysis() {
+    const studentId = document.getElementById('teacherReportStudentSelect').value;
+    const apiKey = document.getElementById('geminiApiKeyInput').value.trim();
+    const mode = document.getElementById('aiModeSelect').value;
+
+    const outputArea = document.getElementById('aiOutputArea');
+    const loadingSpinner = document.getElementById('aiLoadingSpinner');
+    const textarea = document.getElementById('aiTextarea');
+
+    if(!studentId) return alert("Lütfen önce bir öğrenci seçin.");
+    if(!apiKey) return alert("Lütfen geçerli bir Gemini API Anahtarı girin. Google AI Studio üzerinden ücretsiz alabilirsiniz.");
+
+    let student = students.find(x => x.id === studentId);
+    if(!student) return alert("Öğrenci bulunamadı.");
+
+    // Loading başlat
+    loadingSpinner.style.display = 'block';
+    outputArea.style.display = 'none';
+
+    // Yapay Zekaya Gönderilecek Öğrenci Verilerini Paketle (Özetle)
+    let examsDataStr = "";
+    if (student.exams) {
+        Object.values(student.exams).forEach(ex => {
+            if(ex.type === 'TYT') {
+                examsDataStr += `- Sınav: ${ex.date} (TYT), Net: ${ex.total} | Detay: Türkçe: ${ex.tur_d || 0}D ${ex.tur_y || 0}Y, Mat: ${ex.mat_d || 0}D ${ex.mat_y || 0}Y, Fizik: ${ex.fiz_d || 0}D ${ex.fiz_y || 0}Y, Kimya: ${ex.kim_d || 0}D ${ex.kim_y || 0}Y, Biyoloji: ${ex.biy_d || 0}D ${ex.biy_y || 0}Y, Sosyal: Tar: ${ex.tar_d || 0}D, Coğ: ${ex.cog_d || 0}D, Fel: ${ex.fel_d || 0}D, Din: ${ex.din_d || 0}D\n`;
+            } else {
+                examsDataStr += `- Sınav: ${ex.date} (AYT), Net: ${ex.total} | Detay: Mat: ${ex.ayt_mat_d || 0}D ${ex.ayt_mat_y || 0}Y, Fizik: ${ex.ayt_fiz_d || 0}D ${ex.ayt_fiz_y || 0}Y, Kimya: ${ex.ayt_kim_d || 0}D ${ex.ayt_kim_y || 0}Y, Biyoloji: ${ex.ayt_biy_d || 0}D ${ex.ayt_biy_y || 0}Y, Edebiyat: ${ex.ayt_edeb_d || 0}D, Tarih-1: ${ex.ayt_tar1_d || 0}D, Coğ-1: ${ex.ayt_cog1_d || 0}D\n`;
+            }
+        });
+    } else {
+        examsDataStr = "Kayıtlı sınav bulunamadı.\n";
+    }
+
+    let tasksDataStr = "";
+    if (student.subjectTasks) {
+        Object.values(student.subjectTasks).forEach(t => {
+            let percent = Math.min(Math.round((t.done / t.target) * 100), 100) || 0;
+            tasksDataStr += `- Ödev: ${t.subject} | Detay: ${t.topic} | Hedef Soru: ${t.target}, Çözülen: ${t.done} (%${percent} tamamlandı)\n`;
+        });
+    } else {
+        tasksDataStr = "Öğrenciye atanmış aktif ödev bulunamadı.\n";
+    }
+
+    // Prompt oluşturma
+    let promptText = "";
+    if (mode === "recommendation") {
+        promptText = `Sen profesyonel bir YKS Koçu ve Fizik Öğretmenisin. Aşağıda verileri bulunan "${student.name}" adlı öğrencinin sınav başarılarını ve ödev performansını analiz et.
+        Öğrencinin güçlü ve zayıf konularını tespit ederek ona önümüzdeki süreçte hangi konulara öncelik vermesi gerektiğine dair nokta atışı ve uygulanabilir soru çözüm tavsiyeleri hazırla. 
+        Tavsiyeler samimi, net, motive edici ve doğrudan uygulanabilir olmalıdır. "Ben" diliyle öğrenciye hitap et.
+
+        Öğrenci Sınavları:
+        ${examsDataStr}
+
+        Öğrencinin Son Ödev Durumları:
+        ${tasksDataStr}
+
+        Lütfen öğrenciye doğrudan hitap eden (örn: "Merhaba Ahmet...") bir dille ve paragraflar halinde yaz.`;
+    } else if (mode === "weekly_program") {
+        promptText = `Sen deneyimli bir YKS Eğitim Koçusun. Aşağıdaki verileri bulunan "${student.name}" adlı öğrenciye özel HAFTALIK bir ders çalışma programı hazırlamanı istiyorum.
+        Öğrencinin deneme sonuçlarındaki zayıf kaldığı dersleri ve konuları göz önünde bulundurarak, dengeli, gerçekçi ve gün gün bölünmüş bir haftalık ders çalışma takvimi planla.
+        Her güne hangi dersleri, hangi konuları çalışması gerektiğini ve o gün için hedef soru sayılarını ekle. Programın uygulanabilir olması çok önemlidir.
+
+        Öğrenci Sınav Verileri:
+        ${examsDataStr}
+
+        Öğrencinin Son Ödev Durumları:
+        ${tasksDataStr}
+
+        Lütfen doğrudan öğrenciye hitap eden bir tonla ("Merhaba ...") yaz. Gün gün ayırarak (Pazartesi, Salı vb.) bir ders planı tablosu veya listesi oluştur.`;
+    } else {
+        promptText = `Sen uzman bir YKS Eğitim Koçusun. "${student.name}" adlı öğrenci için önümüzdeki 1 aylık süreci kapsayacak şekilde makro seviyede stratejik bir çalışma yol haritası ve genel aylık program hazırla.
+        Zayıf olduğu alanları güçlendirmeyi hedeflerken, güçlü olduğu dersleri de unutturmayacak bir denge kur. Haftalık periyotlar halinde (1. Hafta, 2. Hafta şeklinde) ana başlıkları ve odaklanılacak hedefleri belirt.
+
+        Öğrenci Sınav Verileri:
+        ${examsDataStr}
+
+        Öğrencinin Son Ödev Durumları:
+        ${tasksDataStr}
+
+        Lütfen öğrenciye doğrudan hitap ederek, profesyonel ama yakın bir tonda detaylıca yaz.`;
+    }
+
+    // Google Gemini REST API Çağrısı (Gemini 1.5 Flash)
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+    
+    try {
+        const response = await fetch(url, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                contents: [{
+                    parts: [{
+                        text: promptText
+                    }]
+                }]
+            })
+        });
+
+        if (!response.ok) {
+            const errData = await response.json();
+            throw new Error(errData.error?.message || "Google API hatası oluştu.");
+        }
+
+        const resData = await response.json();
+        const generatedText = resData.candidates[0].content.parts[0].text;
+
+        textarea.value = generatedText;
+        loadingSpinner.style.display = 'none';
+        outputArea.style.display = 'block';
+
+    } catch (err) {
+        console.error("Gemini Entegrasyon Hatası:", err);
+        loadingSpinner.style.display = 'none';
+        alert("Yapay zeka raporu oluşturulurken bir hata oluştu: " + err.message);
+    }
+}
+
+function sendAIReportToStudent() {
+    const studentId = document.getElementById('teacherReportStudentSelect').value;
+    const reportText = document.getElementById('aiTextarea').value;
+
+    if(!studentId) return alert("Öğrenci seçilmedi.");
+    if(!reportText.trim()) return alert("Gönderilecek rapor metni boş olamaz.");
+
+    if(confirm("Bu yapay zeka raporunu/programını öğrencinin paneline mesaj olarak göndermek istiyor musunuz?")) {
+        db.ref("students/" + studentId).update({ approvedMotivation: reportText }, (error) => {
+            if(!error) {
+                alert("Rapor başarıyla öğrencinin paneline iletildi!");
+            } else {
+                alert("İşlem sırasında bir hata oluştu.");
+            }
+        });
+    }
+}
+
+function copyAIText() {
+    const textarea = document.getElementById('aiTextarea');
+    textarea.select();
+    document.execCommand('copy');
+    alert("Metin panoya kopyalandı!");
 }
 
 function deleteTask(studentId, taskKey) {
@@ -1041,7 +1240,15 @@ async function processPDFv2() {
 function showStudentDashboard(s) {
     document.getElementById('welcomeText').innerText = `Hoş geldin, ${s.name}`; document.getElementById('studentSubInfo').innerText = `Sınıf: ${s.class} | Detaylı Ödev Sistemi`;
     const quickSwitch = document.getElementById('quickStudentSwitchSelect'); if(quickSwitch) { quickSwitch.value = s.id; }
-    const motArea = document.getElementById('studentMotivationArea'); if(s.approvedMotivation) { motArea.innerHTML = `<div class="motivation-box">🚀 <b>Hocandan Mesaj Var:</b> ${s.approvedMotivation}</div>`; } else { motArea.innerHTML = ''; }
+    const motArea = document.getElementById('studentMotivationArea'); 
+    
+    if(s.approvedMotivation) { 
+        // Yapay Zekadan gelen satır atlamalarını korumak için pre-wrap stilini ekledik
+        motArea.innerHTML = `<div class="motivation-box" style="white-space: pre-wrap;">🚀 <b>Hocandan Mesaj / Program Var:</b>\n\n${s.approvedMotivation}</div>`; 
+    } else { 
+        motArea.innerHTML = ''; 
+    }
+    
     const listArea = document.getElementById('studentTasksListArea'); listArea.innerHTML = '';
     if(s.subjectTasks) {
         Object.keys(s.subjectTasks).forEach(key => {
@@ -1263,7 +1470,6 @@ function renderStudentChart(student) {
     const ctxAyt = canvasAyt.getContext('2d');
 
     const exams = student.exams ? Object.values(student.exams) : [];
-    // Güvenli filtreleme yaparak null ya da hatalı kayıtların grafiği bozmasını önleriz.
     const tytExams = exams.filter(e => e && (!e.type || e.type === 'TYT'));
     const aytExams = exams.filter(e => e && e.type === 'AYT');
 
