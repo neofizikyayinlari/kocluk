@@ -939,11 +939,11 @@ async function generateAIAnalysis() {
     let student = students.find(x => x.id === studentId);
     if(!student) return alert("Öğrenci bulunamadı.");
 
-    // Loading başlat
+    // Yükleme göstergesini aç
     loadingSpinner.style.display = 'block';
     outputArea.style.display = 'none';
 
-    // Yapay Zekaya Gönderilecek Öğrenci Verilerini Paketle (Özetle)
+    // Yapay Zekaya Gönderilecek Öğrenci Verilerini Hazırla
     let examsDataStr = "";
     if (student.exams) {
         Object.values(student.exams).forEach(ex => {
@@ -1024,14 +1024,44 @@ async function generateAIAnalysis() {
             })
         });
 
+        // Detaylı HTTP Hata Analizi
         if (!response.ok) {
-            const errData = await response.json();
-            throw new Error(errData.error?.message || "Google API hatası oluştu.");
+            let errorText = `HTTP Hatası: ${response.status}`;
+            try {
+                const errData = await response.json();
+                if (errData?.error?.message) {
+                    errorText = errData.error.message;
+                }
+            } catch (e) {
+                // Yanıt JSON değilse düz metin olarak okumaya çalış
+                const rawText = await response.text();
+                if (rawText) errorText += ` - ${rawText}`;
+            }
+            throw new Error(errorText);
         }
 
         const resData = await response.json();
-        const generatedText = resData.candidates[0].content.parts[0].text;
 
+        // Güvenlik Politikası Engellemelerinin Denetimi
+        if (resData.promptFeedback && resData.promptFeedback.blockReason) {
+            throw new Error(`Talep, Google'ın güvenlik politikasına takıldı. Sebep: ${resData.promptFeedback.blockReason}`);
+        }
+
+        if (!resData.candidates || resData.candidates.length === 0) {
+            throw new Error("API'den uygun bir yanıt seçeneği dönmedi. Filtreleme gerçekleşmiş olabilir.");
+        }
+
+        const candidate = resData.candidates[0];
+        if (candidate.finishReason === "SAFETY") {
+            throw new Error("Yapay zeka yanıt üretirken güvenlik filtresi (SAFETY) nedeniyle durduruldu.");
+        }
+
+        const generatedText = candidate.content?.parts?.[0]?.text;
+        if (!generatedText) {
+            throw new Error("Yapay zeka yanıtı boş döndü.");
+        }
+
+        // Metni alana yerleştir ve göster
         textarea.value = generatedText;
         loadingSpinner.style.display = 'none';
         outputArea.style.display = 'block';
@@ -1039,10 +1069,18 @@ async function generateAIAnalysis() {
     } catch (err) {
         console.error("Gemini Entegrasyon Hatası:", err);
         loadingSpinner.style.display = 'none';
-        alert("Yapay zeka raporu oluşturulurken bir hata oluştu: " + err.message);
+        
+        // Kullanıcı dostu ve açıklayıcı hata mesajları
+        let userFriendlyMsg = err.message;
+        if (err.message.includes("API key not valid")) {
+            userFriendlyMsg = "Girdiğiniz API anahtarı geçersiz veya kısıtlanmış. Lütfen Google AI Studio'dan aldığınız anahtarı kontrol edin.";
+        } else if (err.message.includes("Failed to fetch")) {
+            userFriendlyMsg = "Bağlantı hatası oluştu. HTML dosyasını yerel bir sunucu (Live Server vb.) üzerinde çalıştırdığınızdan emin olun.";
+        }
+        
+        alert("Yapay zeka analizi sırasında bir hata oluştu:\n" + userFriendlyMsg);
     }
 }
-
 function sendAIReportToStudent() {
     const studentId = document.getElementById('teacherReportStudentSelect').value;
     const reportText = document.getElementById('aiTextarea').value;
