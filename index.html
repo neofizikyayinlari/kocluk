@@ -467,7 +467,7 @@
                         <div class="progress-container" style="height: 24px;"><div id="rep_progress_bar" class="progress-bar" style="width: 0%;"></div><div id="rep_progress_text" class="progress-text" style="line-height:24px; font-size:13px;">%0</div></div>
                     </div>
 
-                    <!-- 🤖 AKILLI YAPAY ZEKA ASİSTANI BÖLÜMÜ (YENİ EKLENDİ) -->
+                    <!-- 🤖 AKILLI YAPAY ZEKA ASİSTANI BÖLÜMÜ -->
                     <div class="card" style="margin-top: 20px; border-left: 5px solid #6c5ce7; background: #f3f0ff;">
                         <h3 style="color: #6c5ce7; display: flex; align-items: center; gap: 8px;">🤖 NEOFİZİK Akıllı Yapay Zeka Koçluk Asistanı (Gemini)</h3>
                         <p style="font-size:12px; color:#7f8c8d; margin-bottom:15px;">Seçtiğiniz öğrencinin tüm sınav geçmişini ve ödev performansını Gemini yapay zekasına analiz ettirerek ders programı veya nokta atışı soru çözme tavsiyeleri oluşturabilirsiniz.</p>
@@ -540,7 +540,13 @@
             </div>
 
             <div class="card">
-                <h3>👥 Canlı Öğrenci Listesi ve Ödev İlerleme Durumları</h3>
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; margin-bottom: 15px;">
+                    <h3 style="margin: 0;">👥 Canlı Öğrenci Listesi ve Ödev İlerleme Durumları</h3>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span style="font-size: 13px; font-weight: bold; color: var(--primary-color);">📅 Ödev Başlangıç Tarihi:</span>
+                        <select id="teacherTaskDateFilterSelect" onchange="renderStudentTable()" style="width: 180px; padding: 6px; font-size: 13px; border: 1px solid var(--primary-color); border-radius: 4px;"></select>
+                    </div>
+                </div>
                 <table>
                     <thead><tr><th>Sınıf</th><th>Adı Soyadı</th><th>Şifre / Kod</th><th>Aktif Ödev Durumları</th><th>Son Sınav (Toplam Net)</th><th>İşlem</th></tr></thead>
                     <tbody id="studentTableBody"></tbody>
@@ -608,6 +614,7 @@ const defaultStudents = {
 db.ref("students").on("value", (snapshot) => {
     const data = snapshot.val();
     if (data) { students = Object.values(data); } else { db.ref("students").set(defaultStudents); students = Object.values(defaultStudents); }
+    updateTaskDateFilterSelect();
     updateSelectMenus(); renderStudentTable(); renderTeacherApprovals(); listenTeacherReceivedMessages();
     if(loggedInStudentCode) { let currentStudent = students.find(x => x.id === loggedInStudentCode); if(currentStudent) showStudentDashboard(currentStudent); }
 });
@@ -887,6 +894,8 @@ function generateComprehensiveStudentReport(studentId) {
     document.getElementById('rep_progress_text').innerText = "%" + avgPercent;
 
     const tasksTableBody = document.getElementById('teacherReportTasksTableBody'); tasksTableBody.innerHTML = '';
+    const today = new Date().toISOString().split('T')[0];
+
     if(!s.subjectTasks || Object.keys(s.subjectTasks).length === 0) {
         tasksTableBody.innerHTML = '<tr><td colspan="8">Bu öğrenciye atanmış herhangi bir ödev bulunmamaktadır.</td></tr>';
     } else {
@@ -894,10 +903,14 @@ function generateComprehensiveStudentReport(studentId) {
             let t = s.subjectTasks[key];
             let percent = Math.min(Math.round((t.done / t.target) * 100), 100) || 0;
             let percentColor = percent === 100 ? 'text-success-bold' : (percent >= 50 ? 'text-success-bold' : 'text-danger-bold');
+            
+            let isExpired = t.endDate && t.endDate < today;
+            let expiredLabel = isExpired ? ' <span style="color:#e74c3c; font-weight:bold; display:block; font-size:11px;">⚠️ SÜRESİ DOLDU</span>' : '';
+
             tasksTableBody.innerHTML += `
                 <tr>
                     <td style="text-align: left; font-weight:600;">${t.subject}</td>
-                    <td style="text-align: left; font-size:13px; max-width:280px; word-wrap:break-word;">${t.topic}</td>
+                    <td style="text-align: left; font-size:13px; max-width:280px; word-wrap:break-word;">${t.topic}${expiredLabel}</td>
                     <td>${formatDate(t.startDate)}</td>
                     <td>${formatDate(t.endDate)}</td>
                     <td><b>${t.target}</b></td>
@@ -915,7 +928,7 @@ function generateComprehensiveStudentReport(studentId) {
     const examTableBody = document.getElementById('teacherReportExamsTableBody'); examTableBody.innerHTML = '';
     let exams = s.exams ? Object.values(s.exams) : [];
     if(exams.length === 0) {
-        examTableBody.innerHTML = '<tr><td colspan="5">Bu öğrenciye ait girilmiş sınav verisi bulunmuyor.</td></tr>';
+        examTableBody.innerHTML = '<tr><td colspan="5">Bu öğrenciye ait girilmiş sınav verisi bulunuyor.</td></tr>';
         document.getElementById('rep_last_exam_net').innerText = "0.00";
     } else {
         exams.forEach(ex => { examTableBody.innerHTML += `<tr><td><b>${ex.date}</b></td><td><span class="student-badge">${ex.type || 'TYT'}</span></td><td class="text-success-bold">${ex.total_d || 0}</td><td class="text-danger-bold">${ex.total_y || 0}</td><td style="font-weight:bold; background:#f7fafc;">${ex.total || "0.00"} Net</td></tr>`; });
@@ -923,7 +936,7 @@ function generateComprehensiveStudentReport(studentId) {
     }
 }
 
-// 🤖 YAPAY ZEKA ASİSTANI FONKSİYONLARI (YENİ EKLENDİ)
+// 🤖 YAPAY ZEKA ASİSTANI FONKSİYONLARI
 async function generateAIAnalysis() {
     const studentId = document.getElementById('teacherReportStudentSelect').value;
     const apiKey = document.getElementById('geminiApiKeyInput').value.trim();
@@ -1186,6 +1199,7 @@ function startEditExam() {
         document.getElementById('netTur_y').value = exam.tur_y || 0;
         document.getElementById('netMat_d').value = exam.mat_d || 0;
         document.getElementById('netMat_y').value = exam.mat_y || 0;
+        document.getElementById('netTar_d').value = exam.tur_d || 0; // Fixed key (tar_d map to NetTar_d)
         document.getElementById('netTar_d').value = exam.tar_d || 0;
         document.getElementById('netTar_y').value = exam.tar_y || 0;
         document.getElementById('netCogr_d').value = exam.cog_d || 0;
@@ -1281,18 +1295,29 @@ function showStudentDashboard(s) {
     const motArea = document.getElementById('studentMotivationArea'); 
     
     if(s.approvedMotivation) { 
-        // Yapay Zekadan gelen satır atlamalarını korumak için pre-wrap stilini ekledik
         motArea.innerHTML = `<div class="motivation-box" style="white-space: pre-wrap;">🚀 <b>Hocandan Mesaj / Program Var:</b>\n\n${s.approvedMotivation}</div>`; 
     } else { 
         motArea.innerHTML = ''; 
     }
     
     const listArea = document.getElementById('studentTasksListArea'); listArea.innerHTML = '';
+    const today = new Date().toISOString().split('T')[0];
+
     if(s.subjectTasks) {
         Object.keys(s.subjectTasks).forEach(key => {
             let t = s.subjectTasks[key]; let percent = Math.min(Math.round((t.done / t.target) * 100), 100) || 0;
+            
+            let isExpired = t.endDate && t.endDate < today;
+            let expiredNotice = "";
+            let cardStyle = "background:white; border-left:5px solid var(--primary-color); padding:15px; margin-bottom:10px;";
+            if(isExpired) {
+                expiredNotice = `<div style="background: #fff5f5; border: 1px solid #fed7d7; color: #c53030; padding: 8px 12px; border-radius: 4px; font-weight: bold; margin-bottom: 8px; font-size: 13px; display: flex; align-items: center; gap: 6px;">⚠️ Ödev süresi doldu!</div>`;
+                cardStyle = "background:#fffafb; border-left:5px solid var(--accent-color); padding:15px; margin-bottom:10px;";
+            }
+
             listArea.innerHTML += `
-            <div class="card" style="background:white; border-left:5px solid var(--primary-color); padding:15px; margin-bottom:10px;">
+            <div class="card" style="${cardStyle}">
+                ${expiredNotice}
                 <div style="display:flex; justify-content:space-between; font-weight:bold; margin-bottom:5px;">
                     <span>📚 ${t.subject} (${t.topic})</span>
                     <span style="color:var(--accent-color);">${t.done} / ${t.target} Soru</span>
@@ -1426,11 +1451,65 @@ function updateSelectMenus() {
     if(tSel && eSel && cSel) { let currentT = tSel.value; let currentE = eSel.value; let currentC = cSel.value; tSel.innerHTML = ''; eSel.innerHTML = ''; cSel.innerHTML = ''; students.forEach(s => { let op = `<option value="${s.id}">${s.name} (${s.class})</option>`; tSel.innerHTML += op; eSel.innerHTML += op; cSel.innerHTML += op; }); tSel.value = currentT; eSel.value = currentE; cSel.value = currentC; }
 }
 
+function updateTaskDateFilterSelect() {
+    const select = document.getElementById('teacherTaskDateFilterSelect');
+    if(!select) return;
+    const currentVal = select.value;
+    
+    let dates = new Set();
+    students.forEach(s => {
+        if(s.subjectTasks) {
+            Object.values(s.subjectTasks).forEach(t => {
+                if(t.startDate) dates.add(t.startDate);
+            });
+        }
+    });
+    
+    let sortedDates = Array.from(dates).sort((a,b) => new Date(b) - new Date(a));
+    
+    select.innerHTML = '<option value="all">-- Tüm Tarihler --</option>';
+    sortedDates.forEach(d => {
+        select.innerHTML += `<option value="${d}">${formatDate(d)}</option>`;
+    });
+    
+    if(sortedDates.includes(currentVal) || currentVal === 'all') {
+        select.value = currentVal;
+    } else {
+        select.value = 'all';
+    }
+}
+
 function renderStudentTable() {
     const tbody = document.getElementById('studentTableBody'); if(!tbody) return; tbody.innerHTML = '';
+    const selectedDate = document.getElementById('teacherTaskDateFilterSelect') ? document.getElementById('teacherTaskDateFilterSelect').value : 'all';
+    const today = new Date().toISOString().split('T')[0];
+
     students.forEach((s) => {
         let exams = s.exams ? Object.values(s.exams) : []; let lastEx = exams.length > 0 ? exams[exams.length-1] : null; let examStr = lastEx ? `<b>${lastEx.total} Net</b>` : '<i>Veri Yok</i>';
-        let taskSummary = ""; if(s.subjectTasks) { Object.values(s.subjectTasks).forEach(t => { let p = Math.min(Math.round((t.done / t.target) * 100), 100) || 0; taskSummary += `<span class="student-badge" style="margin-right:4px; margin-bottom:4px; display:inline-block; background:${p===100?'#c6f6d5':'#feebc8'}; color:${p===100?'#22543d':'#744210'}">${t.subject}: %${p}</span>`; }); } else { taskSummary = '<i>Ödev Yok</i>'; }
+        let taskSummary = "";
+        
+        if(s.subjectTasks) {
+            let filteredTasks = Object.values(s.subjectTasks);
+            if(selectedDate && selectedDate !== 'all') {
+                filteredTasks = filteredTasks.filter(t => t.startDate === selectedDate);
+            }
+            
+            if(filteredTasks.length > 0) {
+                filteredTasks.forEach(t => {
+                    let p = Math.min(Math.round((t.done / t.target) * 100), 100) || 0;
+                    let isExpired = t.endDate && t.endDate < today;
+                    let expiredLabel = isExpired ? ' <span style="font-size:10px; color:#e74c3c; font-weight:bold;">(Süre Doldu)</span>' : '';
+                    
+                    let bg = p === 100 ? '#c6f6d5' : (isExpired ? '#fed7d7' : '#feebc8');
+                    let fg = p === 100 ? '#22543d' : (isExpired ? '#c53030' : '#744210');
+                    
+                    taskSummary += `<span class="student-badge" style="margin-right:4px; margin-bottom:4px; display:inline-block; background:${bg}; color:${fg}">${t.subject}: %${p}${expiredLabel}</span>`;
+                });
+            } else {
+                taskSummary = selectedDate === 'all' ? '<i>Ödev Yok</i>' : '<i>Seçilen Tarihte Ödev Yok</i>';
+            }
+        } else { taskSummary = '<i>Ödev Yok</i>'; }
+
         tbody.innerHTML += `<tr><td><span class="student-badge">${s.class}</span></td><td><b>${s.name}</b></td><td><code>${s.id}</code></td><td>${taskSummary}</td><td>${examStr}</td><td><button class="btn btn-danger" style="padding:4px 8px; font-size:12px;" onclick="deleteStudent('${s.id}')">Sil</button></td></tr>`;
     });
 }
