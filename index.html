@@ -63,6 +63,12 @@
         .report-metric-box { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 15px; }
         .metric-card { background: white; padding: 15px; border-radius: 6px; border: 1px solid var(--border-color); text-align: center; }
         .metric-value { font-size: 22px; font-weight: bold; color: var(--primary-color); margin-top: 5px; }
+
+        .task-filter-bar { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 10px; }
+        .task-filter-bar h3 { margin: 0; }
+        .task-filter-select-box { display: flex; align-items: center; gap: 8px; }
+        .task-filter-select-box span { font-size: 12px; font-weight: bold; color: var(--primary-color); white-space: nowrap; }
+        .task-filter-select-box select { width: 190px; padding: 7px; font-size: 12px; border: 1px solid var(--primary-color); border-radius: 4px; }
     </style>
 </head>
 <body>
@@ -111,8 +117,16 @@
             <div class="grid-2">
                 <div>
                     <div class="card">
-                        <h3>🎯 Haftalık Ders Bazlı Ödevlerim & Soru Sayaçlarım</h3>
-                        <p style="font-size:12px; color:#7f8c8d; margin-bottom:15px;">Soru çözdükçe sağdaki kutuya toplam çözdüğünüz soru adedini yazıp güncelleyin.</p>
+                        <div class="task-filter-bar">
+                            <h3>🎯 Haftalık Ders Bazlı Ödevlerim & Soru Sayaçlarım</h3>
+                            <div class="task-filter-select-box">
+                                <span>📅 Ödev Tarihi:</span>
+                                <select id="studentTaskDateFilterSelect" onchange="renderStudentTasksList()">
+                                    <option value="all">Tüm Tarihler</option>
+                                </select>
+                            </div>
+                        </div>
+                        <p style="font-size:12px; color:#7f8c8d; margin-bottom:15px;">Soru çözdükçe sağdaki kutuya toplam çözdüğünüz soru adedini yazıp güncelleyin. Yukarıdan bir ödev veriliş tarihi seçerek sadece o tarihte size atanan ödevleri görebilirsiniz.</p>
                         <div id="studentTasksListArea">Henüz aktif bir ders ödeviniz bulunmuyor.</div>
                     </div>
                     
@@ -1299,41 +1313,93 @@ function showStudentDashboard(s) {
         motArea.innerHTML = ''; 
     }
     
-    const listArea = document.getElementById('studentTasksListArea'); listArea.innerHTML = '';
+    // Ödev tarih filtresini güncelle ve listeyi bu filtreye göre çiz
+    updateStudentTaskDateFilterSelect(s);
+    renderStudentTasksList();
+
+    activeStudentExamsData = s.exams ? s.exams : {}; buildStudentExamSelectMenu(); renderStudentChart(s);
+}
+
+function updateStudentTaskDateFilterSelect(student) {
+    const select = document.getElementById('studentTaskDateFilterSelect');
+    if(!select) return;
+    const currentVal = select.value;
+
+    let dates = new Set();
+    if(student.subjectTasks) {
+        Object.values(student.subjectTasks).forEach(t => {
+            if(t.startDate) dates.add(t.startDate);
+        });
+    }
+
+    let sortedDates = Array.from(dates).sort((a,b) => new Date(b) - new Date(a));
+
+    select.innerHTML = '<option value="all">Tüm Tarihler</option>';
+    sortedDates.forEach(d => {
+        select.innerHTML += `<option value="${d}">${formatDate(d)}</option>`;
+    });
+
+    if(sortedDates.includes(currentVal) || currentVal === 'all') {
+        select.value = currentVal;
+    } else {
+        select.value = 'all';
+    }
+}
+
+function renderStudentTasksList() {
+    if(!loggedInStudentCode) return;
+    let s = students.find(x => x.id === loggedInStudentCode);
+    if(!s) return;
+
+    const listArea = document.getElementById('studentTasksListArea');
+    if(!listArea) return;
+    const filterSelect = document.getElementById('studentTaskDateFilterSelect');
+    const selectedDate = filterSelect ? filterSelect.value : 'all';
     const today = new Date().toISOString().split('T')[0];
 
-    if(s.subjectTasks) {
-        Object.keys(s.subjectTasks).forEach(key => {
-            let t = s.subjectTasks[key]; let percent = Math.min(Math.round((t.done / t.target) * 100), 100) || 0;
-            
-            let isExpired = t.endDate && t.endDate < today;
-            let expiredNotice = "";
-            let cardStyle = "background:white; border-left:5px solid var(--primary-color); padding:15px; margin-bottom:10px;";
-            if(isExpired) {
-                expiredNotice = `<div style="background: #fff5f5; border: 1px solid #fed7d7; color: #c53030; padding: 8px 12px; border-radius: 4px; font-weight: bold; margin-bottom: 8px; font-size: 13px; display: flex; align-items: center; gap: 6px;">⚠️ Ödev süresi doldu!</div>`;
-                cardStyle = "background:#fffafb; border-left:5px solid var(--accent-color); padding:15px; margin-bottom:10px;";
-            }
+    listArea.innerHTML = '';
 
-            listArea.innerHTML += `
-            <div class="card" style="${cardStyle}">
-                ${expiredNotice}
-                <div style="display:flex; justify-content:space-between; font-weight:bold; margin-bottom:5px;">
-                    <span>📚 ${t.subject} (${t.topic})</span>
-                    <span style="color:var(--accent-color);">${t.done} / ${t.target} Soru</span>
-                </div>
-                <div style="font-size:12px; color:#7f8c8d; margin-bottom:8px;">
-                    📅 Süre: ${formatDate(t.startDate)} - ${formatDate(t.endDate)}
-                </div>
-                <div class="progress-container"><div class="progress-bar" style="width: ${percent}%;"></div><div class="progress-text">%${percent}</div></div>
-                <div style="display:flex; gap:10px; margin-top:10px; justify-content:flex-end; align-items:center;">
-                    <span style="font-size:13px; font-weight:600;">Çözülen:</span>
-                    <input type="number" id="input_${key}" value="${t.done}" style="width:80px; text-align:center;">
-                    <button class="btn btn-success" style="padding:5px 10px; font-size:12px;" onclick="updateQuestionCount('${s.id}', '${key}')">Güncelle</button>
-                </div>
-            </div>`;
-        });
-    } else { listArea.innerHTML = 'Aktif bir ödeviniz bulunmuyor.'; }
-    activeStudentExamsData = s.exams ? s.exams : {}; buildStudentExamSelectMenu(); renderStudentChart(s);
+    if(!s.subjectTasks) { listArea.innerHTML = 'Aktif bir ödeviniz bulunmuyor.'; return; }
+
+    let taskKeys = Object.keys(s.subjectTasks);
+    if(selectedDate && selectedDate !== 'all') {
+        taskKeys = taskKeys.filter(key => s.subjectTasks[key].startDate === selectedDate);
+    }
+
+    if(taskKeys.length === 0) {
+        listArea.innerHTML = selectedDate === 'all' ? 'Aktif bir ödeviniz bulunmuyor.' : 'Seçilen tarihte size atanmış bir ödev bulunmuyor.';
+        return;
+    }
+
+    taskKeys.forEach(key => {
+        let t = s.subjectTasks[key]; let percent = Math.min(Math.round((t.done / t.target) * 100), 100) || 0;
+
+        let isExpired = t.endDate && t.endDate < today;
+        let expiredNotice = "";
+        let cardStyle = "background:white; border-left:5px solid var(--primary-color); padding:15px; margin-bottom:10px;";
+        if(isExpired) {
+            expiredNotice = `<div style="background: #fff5f5; border: 1px solid #fed7d7; color: #c53030; padding: 8px 12px; border-radius: 4px; font-weight: bold; margin-bottom: 8px; font-size: 13px; display: flex; align-items: center; gap: 6px;">⚠️ Ödev süresi doldu!</div>`;
+            cardStyle = "background:#fffafb; border-left:5px solid var(--accent-color); padding:15px; margin-bottom:10px;";
+        }
+
+        listArea.innerHTML += `
+        <div class="card" style="${cardStyle}">
+            ${expiredNotice}
+            <div style="display:flex; justify-content:space-between; font-weight:bold; margin-bottom:5px;">
+                <span>📚 ${t.subject} (${t.topic})</span>
+                <span style="color:var(--accent-color);">${t.done} / ${t.target} Soru</span>
+            </div>
+            <div style="font-size:12px; color:#7f8c8d; margin-bottom:8px;">
+                📅 Süre: ${formatDate(t.startDate)} - ${formatDate(t.endDate)}
+            </div>
+            <div class="progress-container"><div class="progress-bar" style="width: ${percent}%;"></div><div class="progress-text">%${percent}</div></div>
+            <div style="display:flex; gap:10px; margin-top:10px; justify-content:flex-end; align-items:center;">
+                <span style="font-size:13px; font-weight:600;">Çözülen:</span>
+                <input type="number" id="input_${key}" value="${t.done}" style="width:80px; text-align:center;">
+                <button class="btn btn-success" style="padding:5px 10px; font-size:12px;" onclick="updateQuestionCount('${s.id}', '${key}')">Güncelle</button>
+            </div>
+        </div>`;
+    });
 }
 
 function updateQuestionCount(studentId, taskKey) {
@@ -1736,4 +1802,3 @@ function renderStudentChart(student) {
 </script>
 </body>
 </html>
-```
